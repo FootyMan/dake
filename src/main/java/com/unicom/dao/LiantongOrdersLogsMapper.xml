@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.unicom.dao.LiantongOrdersLogsMapper">
+	<resultMap id="orderResultMap" type="com.unicom.bean.LiantongOrdersLogs">
+		<id column="id" property="id" jdbcType="INTEGER" />
+		<result column="channel" property="channel" jdbcType="INTEGER" />
+		<result column="product_id" property="product_id" jdbcType="INTEGER" />
+		
+		<result column="orderid" property="orderid" jdbcType="VARCHAR" />
+		<result column="liantong_orderno" property="liantong_orderno" jdbcType="BIGINT" />
+		<result column="state" property="state" jdbcType="INTEGER" />
+		<result column="remarks" property="remarks" jdbcType="VARCHAR" />
+		<result column="create_time" property="create_time" jdbcType="INTEGER" />
+	</resultMap>
+
+	 
+
+	<insert id="InsertOrderLog" parameterType="com.unicom.bean.LiantongOrdersLogs" keyProperty="id">
+		insert into bj_liantong_orders_logs(channel,product_id,orderid,liantong_orderno,state,remarks,create_time)
+		values(#{channel},#{product_id},#{orderid},#{liantong_orderno},#{state},#{remarks},#{create_time})
+	</insert>
+
+</mapper>

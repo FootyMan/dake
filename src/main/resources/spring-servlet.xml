@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans default-autowire="byName"
+	xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd 
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+<!-- 	<context:component-scan base-package="com.unicom.impl"/> -->
+	<context:component-scan base-package="com.unicom.controller" />
+	<context:component-scan base-package="com.unicom.config" />
+
+	<bean id="requestDecryptResponseEncryptBodyProcessorImpl"
+		class="com.unicom.requestresponse.RequestDecryptResponseEncryptBodyProcessorImpl" />
+
+	<bean id="decryptEncryptFastJsonHttpMessageConverter"
+		class="com.unicom.requestresponse.DecryptEncryptFastJsonHttpMessageConverter"
+		p:requestDecryptResponseEncryptBodyProcessor-ref="requestDecryptResponseEncryptBodyProcessorImpl" />
+
+
+	<bean id="requestDecryptResponseEncryptBodyMethodProcessor"
+		class="com.unicom.requestresponse.RequestDecryptResponseEncryptBodyMethodProcessor">
+		<constructor-arg>
+			<list>
+				<ref bean="decryptEncryptFastJsonHttpMessageConverter" />
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<mvc:annotation-driven>
+		<mvc:message-converters>
+			<!-- <bean -->
+			<!-- class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter4" 
+				/> -->
+			<bean class="org.springframework.http.converter.StringHttpMessageConverter">
+				<property name="defaultCharset" value="UTF-8" />
+			</bean>
+			<bean
+				class="org.springframework.http.converter.json.GsonHttpMessageConverter">
+				<property name="defaultCharset" value="UTF-8" />
+				<property name="supportedMediaTypes">
+					<list>
+						<value>text/plain</value>
+						<value>text/html</value>
+					</list>
+				</property>
+			</bean>
+		</mvc:message-converters>
+		<mvc:argument-resolvers>
+			<ref bean="requestDecryptResponseEncryptBodyMethodProcessor" />
+		</mvc:argument-resolvers>
+		<mvc:return-value-handlers>
+			<ref bean="requestDecryptResponseEncryptBodyMethodProcessor" />
+		</mvc:return-value-handlers>
+	</mvc:annotation-driven>
+
+	<!-- <aop:aspectj-autoproxy></aop:aspectj-autoproxy> -->
+	<!-- aop -->
+	<!-- <bean id="logService" class="com.api.utils.SysLogAspect"></bean> -->
+	<!-- 启动aop -->
+	<!-- <aop:aspectj-autoproxy proxy-target-class="true" /> -->
+	<mvc:default-servlet-handler />
+	<mvc:resources mapping="/css/**" location="/css/" />
+	<mvc:resources mapping="/*.html" location="/" />
+	<mvc:resources mapping="/js/**" location="/js/" />
+	<!-- 多个拦截器,顺序执行 -->
+	<!-- <mvc:interceptors> -->
+	<!-- <bean class="com.api.utils.ResponseInterceptor"></bean> -->
+	<!-- </mvc:interceptors> -->
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/jsp/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+	<bean id="springBeanUtils" class="com.unicom.utils.SpringBeanUtils"/>
+</beans>

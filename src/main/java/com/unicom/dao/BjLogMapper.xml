@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.unicom.dao.BjLogMapper">
+	<resultMap id="orderResultMap" type="com.unicom.bean.BjLog">
+		<id column="logId" property="logId" jdbcType="INTEGER" />
+		<result column="logType" property="logType" jdbcType="INTEGER" />
+		<result column="reqMsg" property="reqMsg" jdbcType="VARCHAR" />
+		<result column="resMsg" property="resMsg" jdbcType="VARCHAR" />
+		<result column="createTime" property="createTime" jdbcType="TIMESTAMP" />
+		<result column="ifName" property="ifName" jdbcType="VARCHAR" />
+
+	</resultMap>
+	<sql id="order_column">
+		logId,logType,reqMsg,resMsg,createTime,ifName
+	</sql>
+
+
+	<insert id="InsertLog" parameterType="com.unicom.bean.BjLog"
+		keyProperty="logId">
+		insert into
+		bj_log(logType,reqMsg,resMsg,createTime,ifName)
+		values(#{logType},#{reqMsg},#{resMsg},NOW(),#{ifName})
+	</insert>
+	<insert id="UpdateLog" parameterType="com.unicom.bean.BjLog">
+		update bj_log set resMsg=#{resMsg} where logId=#{logId}
+	</insert>
+</mapper>

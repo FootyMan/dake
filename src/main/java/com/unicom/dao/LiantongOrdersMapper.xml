@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.unicom.dao.LiantongOrdersMapper">
+	<resultMap id="orderResultMap" type="com.unicom.bean.LiantongOrders">
+		<id column="id" property="id" jdbcType="INTEGER" />
+		<result column="channel" property="channel" jdbcType="INTEGER" />
+		<result column="orderid" property="orderid" jdbcType="VARCHAR" />
+		<result column="liantong_orderno" property="liantong_orderno" jdbcType="BIGINT" />
+		<result column="product_id" property="product_id" jdbcType="INTEGER" />
+		<result column="product_type" property="product_type" jdbcType="VARCHAR" />
+		<result column="order_type" property="order_type" jdbcType="INTEGER" />
+		<result column="province_code" property="province_code" jdbcType="VARCHAR" />
+		<result column="city_code" property="city_code" jdbcType="VARCHAR" />
+		<result column="district_code" property="district_code" jdbcType="VARCHAR" />
+		<result column="post_province_code" property="post_province_code" jdbcType="INTEGER" />
+		<result column="post_city_code" property="post_city_code" jdbcType="INTEGER" />
+		<result column="address" property="address" jdbcType="VARCHAR" />
+		<result column="phone_num" property="phone_num" jdbcType="VARCHAR" />
+		<result column="contact_num" property="contact_num" jdbcType="VARCHAR" />
+		<result column="cert_name" property="cert_name" jdbcType="VARCHAR" />
+		<result column="cert_no" property="cert_no" jdbcType="VARCHAR" />
+		<result column="state" property="state" jdbcType="INTEGER" />
+		<result column="create_time" property="create_time" jdbcType="INTEGER" />
+		<result column="update_time" property="update_time" jdbcType="INTEGER" />
+	</resultMap>
+	<sql id="order_column">
+		id,channel,orderid,product_id,product_type,order_type,province_code,city_code,district_code,
+		post_province_code,post_city_code,address,phone_num,contact_num,cert_name,cert_no,state,create_time,update_time
+	</sql>
+
+
+
+
+	<insert id="InsertOrder" parameterType="com.unicom.bean.LiantongOrders">
+		insert into
+		bj_liantong_orders(channel,orderid,liantong_orderno,product_id,product_type,order_type,province_code,city_code,district_code,
+		post_province_code,post_city_code,address,phone_num,contact_num,cert_name,cert_no,state,create_time,update_time)
+		values(#{channel},#{orderid},#{liantong_orderno},#{product_id},#{product_type},#{order_type},#{province_code},#{city_code},#{district_code},
+		#{post_province_code},#{post_city_code},#{address},#{phone_num},#{contact_num},#{cert_name},#{cert_no},#{state},#{create_time},#{update_time})
+	</insert>
+	
+	<select id="SelectOrderByorderId" resultType="com.unicom.bean.LiantongOrders"
+		parameterType="java.lang.String">
+		select
+		*
+		from bj_liantong_orders where orderid=#{orderid}
+	</select>
+
+	<update id="UpdateOrder" parameterType="com.unicom.bean.LiantongOrders">
+		update bj_liantong_orders
+		<set>
+		<if test="liantong_orderno>0">
+			liantong_orderno=#{liantong_orderno},
+		</if>
+		<if test="state>0">
+			state=#{state},
+		</if>
+		<if test="update_time>0">
+			update_time=#{update_time},
+		</if>
+		</set>
+		where orderid=#{orderid}
+	</update>
+
+</mapper>
