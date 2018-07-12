@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.phw.eop.api.ApiException;
 import org.phw.eop.api.EopClient;
 import org.phw.eop.api.EopReq;
 import org.phw.eop.api.EopRsp;
@@ -28,7 +27,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.unicom.bean.LiantongOrders;
 import com.unicom.bean.LiantongOrdersLogs;
 import com.unicom.bean.VsitData;
-import com.unicom.impl.LiantongOrdersLogsServiceImpl;
 import com.unicom.impl.LiantongOrdersServiceImpl;
 import com.unicom.impl.VsitDataServiceImpl;
 import com.unicom.request.BaseVerificationReq;
@@ -57,7 +55,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @Controller
 // @RequestMapping(value = "/order", consumes = {
 // MediaType.APPLICATION_JSON_VALUE }, produces = {
@@ -70,9 +67,8 @@ public class OrderController {
 	private LiantongOrdersServiceImpl ordersServiceImpl;
 	@Autowired
 	private VsitDataServiceImpl dataServiceImpl;
-	// @Autowired
-	// private LiantongOrdersLogsServiceImpl ordersLogsServiceImpl;
 
+	@CrossOrigin(origins = {EopConfig.qa_url,EopConfig.pro_url}, maxAge = 3600)
 	@ResponseBody
 	@RequestMapping(value = "/ordersync", consumes = { MediaType.APPLICATION_JSON_VALUE }, produces = {
 			MediaType.APPLICATION_JSON_VALUE }, method = RequestMethod.POST)
@@ -113,8 +109,8 @@ public class OrderController {
 			reqMap.put("channel", channel);
 			if (request.getOrderType() == 1) {
 				reqMap.put("StoreCode", request.getStoreCode()); // 营业厅编码，营业厅自提订单必传
-																		// reqMap.put("PostName",
-																		// "张三");
+																	// reqMap.put("PostName",
+																	// "张三");
 				// 短信验证码，非必传
 			}
 
@@ -173,6 +169,7 @@ public class OrderController {
 		return response;
 	}
 
+	@CrossOrigin(origins = "http://192.168.0.219:809", maxAge = 3600)
 	@ResponseBody
 	@RequestMapping(value = "/browse", method = RequestMethod.GET)
 	// @ApiOperation(nickname = "swagger-registe", value = "浏览接口", notes =
@@ -180,38 +177,41 @@ public class OrderController {
 	public BaseResponse<?> BrowsePage(HttpServletRequest req, HttpServletResponse res) throws Exception {
 
 		BaseResponse<?> response = new BaseResponse<Object>();
-		// try {
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-		System.out.println("IP地址：" + req.getRemoteAddr());
-		long ip = IPUtil.ipToLong(CommonMethod.getIp(req));
-		// System.out.println("转换后IP地址：" + ip);
-		// System.out.println("转换后int地址：" + ip);
-		BrowseRequest dataRequest = new BrowseRequest();
-		dataRequest.setChannel(req.getParameter("channel") == null ? 0 : Integer.valueOf(req.getParameter("channel")));
-		dataRequest.setProductId(
-				req.getParameter("productId") == null ? 0 : Integer.valueOf(req.getParameter("productId")));
-		dataRequest.setUrl(req.getParameter("url") == null ? "" : req.getParameter("url"));
-		dataRequest.setReferer(req.getParameter("referer") == null ? "" : req.getParameter("referer"));
-		VsitData data = new VsitData();
-		data.setIp(ip);
-		data.setDate(dateFormat.format(new Date()));
-		// 查询是否有记录
-		VsitData vsitData = dataServiceImpl.SelectDataByIp(data);
+		String referer = req.getHeader("Referer");
+		if (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url)) {
 
-		data.setChannel(dataRequest.getChannel());
-		data.setProduct_id(dataRequest.getProductId());
-		data.setUri(dataRequest.getUrl());
-		data.setReferer(dataRequest.getReferer());
-		data.setCreate_time(DateUtil.getSecondTimestampTwo(new Date()));
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			System.out.println("IP地址：" + req.getRemoteAddr());
+			long ip = IPUtil.ipToLong(CommonMethod.getIp(req));
+			// System.out.println("转换后IP地址：" + ip);
+			// System.out.println("转换后int地址：" + ip);
+			BrowseRequest dataRequest = new BrowseRequest();
+			dataRequest
+					.setChannel(req.getParameter("channel") == null ? 0 : Integer.valueOf(req.getParameter("channel")));
+			dataRequest.setProductId(
+					req.getParameter("productId") == null ? 0 : Integer.valueOf(req.getParameter("productId")));
+			dataRequest.setUrl(req.getParameter("url") == null ? "" : req.getParameter("url"));
+			dataRequest.setReferer(req.getParameter("referer") == null ? "" : req.getParameter("referer"));
+			VsitData data = new VsitData();
+			data.setIp(ip);
+			data.setDate(dateFormat.format(new Date()));
+			// 查询是否有记录
+			VsitData vsitData = dataServiceImpl.SelectDataByIp(data);
 
-		// 此处cookie需要查询库里是否存在当天的记录
-		data.setCookie(Md5Util.stringByMD5(ip + StringUtils.GetRandom()));
-		if (vsitData != null) {
-			// System.out.println("转换后"+IPUtil.longToIP(vsitData.getIp()));
-			data.setCookie(vsitData.getCookie());
+			data.setChannel(dataRequest.getChannel());
+			data.setProduct_id(dataRequest.getProductId());
+			data.setUri(dataRequest.getUrl());
+			data.setReferer(dataRequest.getReferer());
+			data.setCreate_time(DateUtil.getSecondTimestampTwo(new Date()));
+
+			// 此处cookie需要查询库里是否存在当天的记录
+			data.setCookie(Md5Util.stringByMD5(ip + StringUtils.GetRandom()));
+			if (vsitData != null) {
+				// System.out.println("转换后"+IPUtil.longToIP(vsitData.getIp()));
+				data.setCookie(vsitData.getCookie());
+			}
+			dataServiceImpl.InsertData(data);
 		}
-		dataServiceImpl.InsertData(data);
-
 		// } catch (Exception e) {
 		// response.setCode(500);
 		// response.setMsg(e.getMessage());
@@ -309,7 +309,7 @@ public class OrderController {
 	// "浏览接口")
 	public BaseResponse<?> OrderTask(HttpServletRequest req, HttpServletResponse res) throws Exception {
 
-		BaseResponse<?> obj=new BaseResponse<Object>();
+		BaseResponse<?> obj = new BaseResponse<Object>();
 		String eopaction = "kingcard.message.get";
 		EopClient client = new EopClient(EopConfig.url, EopConfig.appcode, EopConfig.signKey);
 		client.setSignAlgorithm("HMAC");
@@ -323,6 +323,7 @@ public class OrderController {
 		EopRsp eopRsp = client.execute(eopReq);
 
 		String ids = "";
+		System.out.println(eopRsp.getResult());
 		OrderLogResponse response = JSONObject.parseObject(eopRsp.getResult().toString(), OrderLogResponse.class);
 		if (response.getRespCode().equals("0000") && response != null && response.getRespBody() != null) {
 			for (OrderLogBody item : response.getRespBody()) {
@@ -330,30 +331,28 @@ public class OrderController {
 				int state = Integer.valueOf(item.getState());
 				Date date = new Date();
 				LiantongOrders order = new LiantongOrders();
-				order.setOrderid(item.getOpenId());
-				order.setLiantong_orderno(item.getId());
+				order.setLiantong_orderno(item.getOrder());
 				order.setState(state);
 				order.setUpdate_time(DateUtil.getSecondTimestampTwo(date));
 				// 日志信息
 				LiantongOrdersLogs orderLogs = new LiantongOrdersLogs();
-				orderLogs.setOrderid(item.getOpenId());
-				orderLogs.setLiantong_orderno(item.getId());
+				orderLogs.setLiantong_orderno(item.getOrder());
 				orderLogs.setState(state);
 				orderLogs.setRemarks(response.getRespDesc());
 				orderLogs.setCreate_time(DateUtil.getSecondTimestampTwo(date));
-				int result = ordersServiceImpl.UpdateOrder(order,orderLogs);
+				int result = ordersServiceImpl.UpdateOrder(order, orderLogs);
 				if (result > 0) {
 					ids += item.getId() + ",";
 				}
 			}
-			LogWrite.Write(reqMap, eopRsp.getResult(), eopaction);
+
 			if (!StringUtils.isEmpty(ids)) {
 				RemoveMessage(ids);
 			}
-			
+
 			System.out.println();
 		}
-
+		LogWrite.Write(reqMap, eopRsp.getResult(), eopaction);
 		return obj;
 	}
 
@@ -365,8 +364,8 @@ public class OrderController {
 	 */
 	public void RemoveMessage(String ids) {
 		try {
-			//去掉最后一个逗号
-			ids=ids.substring(0, ids.length() - 1);
+			// 去掉最后一个逗号
+			ids = ids.substring(0, ids.length() - 1);
 			String eopaction = "kingcard.message.del";
 			EopClient client = new EopClient(EopConfig.url, EopConfig.appcode, EopConfig.signKey);
 			client.setSignAlgorithm("HMAC");

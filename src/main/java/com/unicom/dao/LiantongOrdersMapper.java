@@ -8,5 +8,5 @@ public abstract interface LiantongOrdersMapper {
 
 	public abstract int UpdateOrder(LiantongOrders order);
 
-	public abstract LiantongOrders SelectOrderByorderId(String orderid);
+	public abstract LiantongOrders SelectOrderByorderId(Long liantong_orderno);
 }

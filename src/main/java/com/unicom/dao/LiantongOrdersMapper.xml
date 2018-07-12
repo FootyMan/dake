@@ -41,18 +41,15 @@
 	</insert>
 	
 	<select id="SelectOrderByorderId" resultType="com.unicom.bean.LiantongOrders"
-		parameterType="java.lang.String">
+		parameterType="java.lang.Long">
 		select
 		*
-		from bj_liantong_orders where orderid=#{orderid}
+		from bj_liantong_orders where liantong_orderno=#{liantong_orderno}
 	</select>
 
 	<update id="UpdateOrder" parameterType="com.unicom.bean.LiantongOrders">
 		update bj_liantong_orders
 		<set>
-		<if test="liantong_orderno>0">
-			liantong_orderno=#{liantong_orderno},
-		</if>
 		<if test="state>0">
 			state=#{state},
 		</if>
@@ -60,7 +57,7 @@
 			update_time=#{update_time},
 		</if>
 		</set>
-		where orderid=#{orderid}
+		where id=#{id}
 	</update>
 
 </mapper>

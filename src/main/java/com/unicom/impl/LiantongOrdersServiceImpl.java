@@ -22,8 +22,8 @@ public class LiantongOrdersServiceImpl {
 		return orderMapper.InsertOrder(order);
 	}
 
-	public LiantongOrders SelectOrderByorderId(String orderid) {
-		return orderMapper.SelectOrderByorderId(orderid);
+	public LiantongOrders SelectOrderByorderId(Long liantong_orderno) {
+		return orderMapper.SelectOrderByorderId(liantong_orderno);
 	}
 
 	// 更新
@@ -31,19 +31,24 @@ public class LiantongOrdersServiceImpl {
 	public int UpdateOrder(LiantongOrders order, LiantongOrdersLogs ordersLogs) {
 
 		int resul = 0;
-		int result = orderMapper.UpdateOrder(order);
-		if (result > 0) {
-			LiantongOrders liantongOrder = SelectOrderByorderId(order.getOrderid());
-			if (liantongOrder != null) {
-				ordersLogs.setChannel(liantongOrder.getChannel());
-				ordersLogs.setProduct_id(liantongOrder.getProduct_id());
+		LiantongOrders liantongOrder = SelectOrderByorderId(order.getLiantong_orderno());
+		if (liantongOrder != null) {
+			ordersLogs.setChannel(liantongOrder.getChannel());
+			ordersLogs.setProduct_id(liantongOrder.getProduct_id());
+			ordersLogs.setOrderid(liantongOrder.getOrderid());
+			order.setId(liantongOrder.getId());
+			int result = orderMapper.UpdateOrder(order);
+			if (result > 0) {
+				
+				
+				// 插入订单日志
+				ordersLogsMapper.InsertOrderLog(ordersLogs);
+				resul = ordersLogs.getId();
+				System.out.println(resul);
+				//throw new RuntimeException("抛出异常");
 			}
-			// 插入订单日志
-			ordersLogsMapper.InsertOrderLog(ordersLogs);
-			resul = ordersLogs.getId();
-			System.out.println(resul);
-			//throw new RuntimeException("抛出异常");
 		}
+		
 		return resul;
 	}
 }

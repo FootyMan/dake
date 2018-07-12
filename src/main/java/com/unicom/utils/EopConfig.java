@@ -20,5 +20,19 @@ public class EopConfig {
 	public final static String URL = "http://demo.mall.10010.com:8104/zop/king/identity/cust/v1";
 	public final static String HMAC = "QW4bupY6wCXaVnYa89btWnmjgRHfgTf/Xvyj7skcDzYHVlvEFEAu7az+e8bv6Rj7XS8gR7myyaNGrom0L12Y9Q==";
 	public final static String AES = "KN+m/EnRoj2YCmmGHM382w==";
+	
+	
+	
+	/**
+	 * 恩 ～ 指定来源
+	 * 
+	 * http://139.129.97.162:8080/10010/?channel=1 测试
+	 * 
+	 * http://www.m-campaign.net/10010/?channel=1 正式
+	 */
+	// 测试地址
+	public final static String qa_url = "http://139.129.97.162:8080";
+	// 生产地址
+	public final static String pro_url = "http://www.m-campaign.net";
 
 }
