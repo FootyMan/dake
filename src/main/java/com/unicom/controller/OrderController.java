@@ -169,16 +169,15 @@ public class OrderController {
 		return response;
 	}
 
-	@CrossOrigin(origins = "http://192.168.0.219:809", maxAge = 3600)
 	@ResponseBody
 	@RequestMapping(value = "/browse", method = RequestMethod.GET)
 	// @ApiOperation(nickname = "swagger-registe", value = "浏览接口", notes =
 	// "浏览接口")
-	public BaseResponse<?> BrowsePage(HttpServletRequest req, HttpServletResponse res) throws Exception {
+	public void BrowsePage(HttpServletRequest req, HttpServletResponse res) throws Exception {
 
 		BaseResponse<?> response = new BaseResponse<Object>();
 		String referer = req.getHeader("Referer");
-		if (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url)) {
+		if (referer!=null && (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url))) {
 
 			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 			System.out.println("IP地址：" + req.getRemoteAddr());
@@ -217,7 +216,7 @@ public class OrderController {
 		// response.setMsg(e.getMessage());
 		// }
 
-		return response;
+		//return response;
 	}
 
 	/**
@@ -270,7 +269,6 @@ public class OrderController {
 			okhttp3.RequestBody requestBody = okhttp3.RequestBody.create(json, JSON.toJSONString(baseReq));
 			Request request = new Request.Builder().url(EopConfig.URL).post(requestBody).build();
 			Response response = client.newCall(request).execute();
-
 			if (response.isSuccessful()) {
 				result = response.body().string();
 			} else {
@@ -278,8 +276,7 @@ public class OrderController {
 			}
 			VerificationResponse ver = JSONObject.parseObject(result, VerificationResponse.class);
 			if (ver.getaCode().equals("0000") || ver.getaCode().equals("560-0001")) {
-				if (ver.getbCode().equals("0000") || (!ver.getbCode().equals("0000") && !ver.getbCode().equals("0001")
-						&& !ver.getbCode().equals("0002"))) {
+				if (ver.getbCode().equals("0000") || (!ver.getbCode().equals("0000") && !ver.getbCode().equals("0001")&& !ver.getbCode().equals("0002"))) {
 					// 成功
 					isSuccess = true;
 				}
