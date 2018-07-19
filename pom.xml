@@ -199,6 +199,12 @@
 			<artifactId>okhttp</artifactId>
 			<version>3.9.0</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk15on</artifactId>
+			<version>1.60</version>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -1,9 +1,13 @@
 package com.unicom.controller;
 
+import java.security.Key;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import org.springframework.aop.ThrowsAdvice;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -13,6 +17,7 @@ import com.unicom.request.ReqBody;
 import com.unicom.request.ReqHead;
 import com.unicom.request.ReqObj;
 import com.unicom.request.VerificationResponse;
+import com.unicom.utils.RSACrypto;
 import com.unicom.utils.SecurityTool;
 
 import okhttp3.MediaType;
@@ -29,66 +34,89 @@ public class Test {
 	private static final String AES = "KN+m/EnRoj2YCmmGHM382w==";
 
 	public static void main(String[] args) throws Exception {
-
-		 for (int i = 0; i <1; i++) {
-			 System.out.println(i);
-			 if (i==2) {
-				
-				 break;
-			}
-			
-		}
-		 System.out.println("11111");
-//		String result="{\"aCode\":\"560-0001\",\"aDesc\":\"110420180704111124797001020573:客户ID不存在\",\"bCode\":\"T9\",\"bDesc\":\"系统下游超时\",\"uuid\":\"0cc033d1-7d84-4f9f-b7b2-5f2528a55ea2\"}";
-//		VerificationResponse ver = JSONObject.parseObject(result, VerificationResponse.class);
-//		if (ver.getaCode().equals("0000") || ver.getaCode().equals("560-0001")) {
-//			if (ver.getbCode().equals("0000") || (!ver.getbCode().equals("0000") && !ver.getbCode().equals("0001")
-//					&& !ver.getbCode().equals("0002"))) {
-//				System.out.println("成功");
-//				 
-//			}
-//		}
-//		BaseVerificationReq req = new BaseVerificationReq();
-//		req.setAppCode(APP_CODE);
-//
-//		ReqObj reqObj = new ReqObj();
-//		String dateStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
-//		ReqHead reqHead = new ReqHead();
-//
-//		reqHead.setTimestamp(dateStr);
-//		reqHead.setUuid(String.valueOf(UUID.randomUUID()));
-//		reqHead.setSign(makeSign(reqHead, APP_CODE));// 验签
-//
-//		ReqBody reqBody = new ReqBody();
-//		reqBody.setProvince("11");
-//		reqBody.setCity("110");
-//		reqBody.setCertName("张三");
-//		reqBody.setCertNum("1111111111111111111");
-//
-//		reqObj.setBody(reqBody);
-//		reqObj.setHead(reqHead);
-//
-//		req.setReqObj(reqObj);
-//
-//		// reOjb不需要加密时
-//		String desStr = JSON.toJSONString(req);
-//		System.out.println(desStr);
-//
-//		JSONObject baseReq = new JSONObject();
-//		baseReq.put("appCode", APP_CODE);
-//		// reqObj节点需要加密时
-//		baseReq.put("reqObj", SecurityTool.encrypt(AES, JSON.toJSONString(reqObj)));
-//		System.out.println(baseReq);
-//		MediaType json = MediaType.parse("application/json; charset=utf-8");
-//		OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
-//		RequestBody requestBody = RequestBody.create(json, JSON.toJSONString(baseReq));
-//		Request request = new Request.Builder().url(URL).post(requestBody).build();
-//		Response response = client.newCall(request).execute();
-//		if (response.isSuccessful()) {
-//			System.out.println(response.body().string());
-//		} else {
-//			System.out.println(response.message());
-//		}
+	 
+		// String str="";
+		// for (int i = 0; i < 5; i++) {
+		// testExecption(i);
+		// str=str+i;
+		// }
+		// System.out.println(str);
+		// try {
+		// VerificationResponse ver = JSONObject.parseObject("",
+		// VerificationResponse.class);
+		//
+		// System.out.println("asdfasf");
+		// } catch (Exception e) {
+		// System.out.println("asdfasf");
+		// }
+		// for (int i = 0; i < 1; i++) {
+		// System.out.println(i);
+		// if (i == 2) {
+		//
+		// break;
+		// }
+		//
+		// }
+		// System.out.println("11111");
+		// String
+		// result="{\"aCode\":\"560-0001\",\"aDesc\":\"110420180704111124797001020573:客户ID不存在\",\"bCode\":\"T9\",\"bDesc\":\"系统下游超时\",\"uuid\":\"0cc033d1-7d84-4f9f-b7b2-5f2528a55ea2\"}";
+		// VerificationResponse ver = JSONObject.parseObject(result,
+		// VerificationResponse.class);
+		// if (ver.getaCode().equals("0000") ||
+		// ver.getaCode().equals("560-0001")) {
+		// if (ver.getbCode().equals("0000") || (!ver.getbCode().equals("0000")
+		// && !ver.getbCode().equals("0001")
+		// && !ver.getbCode().equals("0002"))) {
+		// System.out.println("成功");
+		//
+		// }
+		// }
+		// BaseVerificationReq req = new BaseVerificationReq();
+		// req.setAppCode(APP_CODE);
+		//
+		// ReqObj reqObj = new ReqObj();
+		// String dateStr = new SimpleDateFormat("yyyy-MM-dd
+		// HH:mm:ss.SSS").format(new Date());
+		// ReqHead reqHead = new ReqHead();
+		//
+		// reqHead.setTimestamp(dateStr);
+		// reqHead.setUuid(String.valueOf(UUID.randomUUID()));
+		// reqHead.setSign(makeSign(reqHead, APP_CODE));// 验签
+		//
+		// ReqBody reqBody = new ReqBody();
+		// reqBody.setProvince("11");
+		// reqBody.setCity("110");
+		// reqBody.setCertName("张三");
+		// reqBody.setCertNum("1111111111111111111");
+		//
+		// reqObj.setBody(reqBody);
+		// reqObj.setHead(reqHead);
+		//
+		// req.setReqObj(reqObj);
+		//
+		// // reOjb不需要加密时
+		// String desStr = JSON.toJSONString(req);
+		// System.out.println(desStr);
+		//
+		// JSONObject baseReq = new JSONObject();
+		// baseReq.put("appCode", APP_CODE);
+		// // reqObj节点需要加密时
+		// baseReq.put("reqObj", SecurityTool.encrypt(AES,
+		// JSON.toJSONString(reqObj)));
+		// System.out.println(baseReq);
+		// MediaType json = MediaType.parse("application/json; charset=utf-8");
+		// OkHttpClient client = new OkHttpClient.Builder().readTimeout(5,
+		// TimeUnit.SECONDS).build();
+		// RequestBody requestBody = RequestBody.create(json,
+		// JSON.toJSONString(baseReq));
+		// Request request = new
+		// Request.Builder().url(URL).post(requestBody).build();
+		// Response response = client.newCall(request).execute();
+		// if (response.isSuccessful()) {
+		// System.out.println(response.body().string());
+		// } else {
+		// System.out.println(response.message());
+		// }
 
 		// TODO Auto-generated method stub
 		// String orderNumber = StringUtils.GetUnicomOrderNumber();
@@ -121,6 +149,12 @@ public class Test {
 			return Integer.valueOf(timestamp.substring(0, length - 3));
 		} else {
 			return 0;
+		}
+	}
+
+	public static void testExecption(int i) throws Exception {
+		if (i == 3) {
+			throw new Exception("111");
 		}
 	}
 

@@ -40,8 +40,12 @@ public class EopConfig {
 	 * http://www.m-campaign.net/10010/?channel=1 正式
 	 */
 	// 测试地址
-	public final static String qa_url ="http://192.168.0.209:809";
+	public final static String qa_url ="http://139.129.97.162:8080";
 	// 生产地址
 	public final static String pro_url ="www.m-campaign.net";
+	/**
+	 * 公司网址
+	 */
+	public final static String comp_rul="thongfu.com";
 
 }
