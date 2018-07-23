@@ -60,4 +60,7 @@
 		where id=#{id}
 	</update>
 
+	<select  id="selectOrderCount" resultType="java.lang.Integer" parameterType="java.lang.String">
+		SELECT count(1) FROM dake.bj_liantong_orders  where cert_no=#{cert_no}
+	</select>
 </mapper>

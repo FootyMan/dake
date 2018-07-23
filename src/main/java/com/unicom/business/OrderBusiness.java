@@ -1,5 +1,8 @@
 package com.unicom.business;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -7,6 +10,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.phw.eop.api.ApiException;
 import org.phw.eop.api.EopClient;
 import org.phw.eop.api.EopReq;
 import org.phw.eop.api.EopRsp;
@@ -19,9 +25,11 @@ import com.unicom.request.OrderRequest;
 import com.unicom.request.ReqBody;
 import com.unicom.request.ReqHead;
 import com.unicom.request.ReqObj;
+import com.unicom.request.UnicomOrderResponse;
 import com.unicom.request.VerificationResponse;
 import com.unicom.utils.EopConfig;
 import com.unicom.utils.LogWrite;
+import com.unicom.utils.RSAUtils;
 import com.unicom.utils.SecurityTool;
 import com.unicom.utils.StringUtils;
 
@@ -134,13 +142,13 @@ public class OrderBusiness {
 				return true;
 			}
 			VerificationResponse ver = JSONObject.parseObject(result, VerificationResponse.class);
-			if (ver.getaCode().equals("0000") || ver.getaCode().equals("560-0001")) {
+			//if (ver.getaCode().equals("0000") || ver.getaCode().equals("560-0001")) {
 				if (ver.getbCode().equals("0000") || (!ver.getbCode().equals("0000") && !ver.getbCode().equals("0001")
 						&& !ver.getbCode().equals("0002") && !ver.getbCode().equals("0003"))) {
 					// 成功
 					isSuccess = true;
 				}
-			}
+			//}
 			if (ver.getaCode().equals("600-T9"))// 超时放过
 			{
 				isSuccess = true;
@@ -154,5 +162,102 @@ public class OrderBusiness {
 		}
 
 		return isSuccess;
+	}
+	
+	/**
+	 * 参数解密
+	 * @param req
+	 * @return
+	 * @throws Exception
+	 */
+	public static OrderRequest ParameterDecrypt(HttpServletRequest req) throws Exception
+	{
+		OrderRequest request = new OrderRequest();
+		req.setCharacterEncoding("UTF-8");
+		BufferedReader br = new BufferedReader(new InputStreamReader(req.getInputStream(), "utf-8"));
+		String line = null;
+		StringBuilder sb = new StringBuilder();
+		while ((line = br.readLine()) != null) {
+			sb.append(line);
+		}
+		JSONObject jsonObject = JSONObject.parseObject(sb.toString());
+
+//		System.out.println(sb.toString());
+//		System.out.println(jsonObject.get("channel"));
+		request.setChannel(Integer.valueOf(RSAUtils.decryptBase64(jsonObject.get("channel").toString())));
+		System.out.println("渠道：" + request.getChannel());
+		request.setProductId(Integer.valueOf(RSAUtils.decryptBase64(jsonObject.get("productId").toString())));
+		request.setProductType(RSAUtils.decryptBase64(jsonObject.get("productType").toString()));
+		request.setOrderType(Integer.valueOf(RSAUtils.decryptBase64(jsonObject.get("orderType").toString())));
+		request.setProvinceCode(RSAUtils.decryptBase64(jsonObject.get("provinceCode").toString()));
+		request.setCityCode(RSAUtils.decryptBase64(jsonObject.get("cityCode").toString()));
+		request.setPhoneNum(RSAUtils.decryptBase64(jsonObject.get("phoneNum").toString()));
+		request.setContactNum(RSAUtils.decryptBase64(jsonObject.get("contactNum").toString()));
+		request.setCertName(RSAUtils.decryptBase64(jsonObject.get("certName").toString()));
+		request.setCertNo(RSAUtils.decryptBase64(jsonObject.get("certNo").toString()));
+		request.setPostProvinceCode(RSAUtils.decryptBase64(jsonObject.get("postProvinceCode").toString()));
+		request.setPostCityCode(RSAUtils.decryptBase64(jsonObject.get("postCityCode").toString()));
+		request.setPostDistrictCode(RSAUtils.decryptBase64(jsonObject.get("postDistrictCode").toString()));
+		request.setPostAddr(RSAUtils.decryptBase64(jsonObject.get("postAddr").toString()));
+		request.setPostName(RSAUtils.decryptBase64(jsonObject.get("postName").toString()));
+		return request;
+	}
+	
+	/**
+	 * 发送同步订单
+	 * @param request
+	 * @param date
+	 * @param State
+	 * @return
+	 * @throws Exception
+	 */
+	public static UnicomOrderResponse OrderSyncSend(OrderRequest request,Date date,	int State ) throws Exception
+	{
+		String eopaction = "didicard.ordersync";
+		int channel = 1288;
+		String orderNumber = "dake" + StringUtils.GetUnicomOrderNumber();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		EopClient client = new EopClient(EopConfig.url, EopConfig.appcode, EopConfig.signKey);
+		client.setSignAlgorithm("HMAC");
+		EopReq eopReq = new EopReq(eopaction);
+		Map<String, Object> reqMap = new HashMap<String, Object>();
+		reqMap.put("OrderID", orderNumber); // 业务参数封装
+		reqMap.put("ProductType", request.getProductType()); // 产品标识：咨询联通商城管理员
+		reqMap.put("State", State);
+		reqMap.put("OrderType", request.getOrderType()); // 订单类型:0-物流配送;1-营业厅自提
+		reqMap.put("ProvinceCode", request.getProvinceCode()); // 号码省份
+		reqMap.put("CityCode", request.getCityCode()); // 号码地市
+		reqMap.put("PhoneNum", request.getPhoneNum()); // 号码
+		reqMap.put("ContactNum", request.getContactNum()); // 联系电话
+		reqMap.put("CertName", request.getCertName()); // 入网人姓名
+		reqMap.put("CertNo", request.getCertNo()); // 入网人身份证号码（身份证中的X要求大写
+		reqMap.put("PostProvinceCode", request.getPostProvinceCode()); // 收货省份，物流配送订单必传
+		reqMap.put("PostCityCode", request.getPostCityCode()); // 收货地市，物流配送订单必传
+		reqMap.put("PostDistrictCode", request.getPostDistrictCode()); // 收货区县，物流配送订单必传
+		reqMap.put("PostAddr", request.getPostAddr()); // 详细地址，物流配送订单必传
+		reqMap.put("PostName", request.getPostName()); // 收货人姓名，物流配送订单必传
+		reqMap.put("channel", channel);
+		if (request.getOrderType() == 1) {
+			reqMap.put("StoreCode", request.getStoreCode()); // 营业厅编码，营业厅自提订单必传
+																// reqMap.put("PostName",
+																// "张三");
+			// 短信验证码，非必传
+		}
+		reqMap.put("CreatTime", dateFormat.format(date));// 订单创建时间，格式：yyyy-mm-dd
+															// hh24:mi:ss
+		reqMap.put("UpdateTime", dateFormat.format(date));// 订单更新时间，格式：yyyy-mm-dd
+															// hh24:mi:ss
+		reqMap.put("CustId", 99999 + StringUtils.GetRandom());// 号码预占关键字,随机数，需以“99999”开头，最长16位数字
+
+		eopReq.put("REQ_STR", reqMap);
+
+		EopRsp eopRsp = client.execute(eopReq);
+		String jsonString = JSON.toJSONString(eopRsp);
+		// SONObject jsonObject = JSONObject.fromObject(reqMap);
+		System.out.println(jsonString);
+
+		UnicomOrderResponse result = JSON.parseObject(eopRsp.getResult().toString(), UnicomOrderResponse.class);
+		LogWrite.Write(reqMap, eopRsp.getResult(), eopaction);
+		return result;
 	}
 }

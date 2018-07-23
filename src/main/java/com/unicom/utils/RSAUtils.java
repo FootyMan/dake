@@ -125,14 +125,14 @@ public class RSAUtils {
 		// 生成public key
 
 		//加密
-//		String string = "郝成阳";
-//		String encStr=encryptBase64(string);
-//		System.out.println(encStr);
+	String string = "37";
+		String encStr=encryptBase64(string);
+		System.out.println(encStr);
 		// 解密
 		String dd=decryptBase64(
-				"TFcWUnFwSmSnmH6vXu10BNDbQaEiZdQ2ca+v8P0EUcfK/4yec1z4LMfW4U0X0FTymYcpD/W/DFJcfrHvIaj9H/wqoZuPLc71s6NBDKxlyjiEH3MlfTnnKbfj4Bkd0ZzP92g51f0hlxYpHycblTs8q7m2pgk7+vkbgmEeWuPJLy4=");
+				"cYLHDQIBtDOGCUb8HTZUEUt328SD3/rE/Zmtu6HtA3TOgd3XBtW/OJQg38w9GuECIiI9Dbm+/eM6AT9/RrwuBtMHfbvw6HleQU2xFBhN0lK22YasOG3uXP8kL8SQtO3UdoJ2tQC4dxlaI1I+gWynvJ/L0gUyUfBPqj4dgr+017E=");
 		
-		System.out.println(dd);
+		System.out.println("aa"+dd);
 	}
 
 }
