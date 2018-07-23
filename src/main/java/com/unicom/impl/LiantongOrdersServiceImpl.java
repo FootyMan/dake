@@ -39,16 +39,19 @@ public class LiantongOrdersServiceImpl {
 			order.setId(liantongOrder.getId());
 			int result = orderMapper.UpdateOrder(order);
 			if (result > 0) {
-				
-				
+
 				// 插入订单日志
 				ordersLogsMapper.InsertOrderLog(ordersLogs);
 				resul = ordersLogs.getId();
 				System.out.println(resul);
-				//throw new RuntimeException("抛出异常");
+				// throw new RuntimeException("抛出异常");
 			}
 		}
-		
+
 		return resul;
+	}
+
+	public int selectOrderCount(String str) {
+		return orderMapper.selectOrderCount(str);
 	}
 }
