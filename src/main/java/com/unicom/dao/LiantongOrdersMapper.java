@@ -10,4 +10,9 @@ public abstract interface LiantongOrdersMapper {
 
 	public abstract LiantongOrders SelectOrderByorderId(Long liantong_orderno);
 	public abstract int selectOrderCount(String str);
+	/**
+	 * 更新联通订单号
+	 * @return
+	 */
+	public abstract int UpdateLiantongOrderNumber(LiantongOrders order);
 }

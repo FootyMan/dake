@@ -31,6 +31,10 @@ public class EopConfig {
 	public final static String URL = PropertiesUtils.ReadProperties(fileName, "zop_url");
 	public final static String HMAC = PropertiesUtils.ReadProperties(fileName, "HMAC");
 	public final static String AES = PropertiesUtils.ReadProperties(fileName, "AES");
+	/**
+	 * 号码变更状态url
+	 */
+	public final static String ModelStateUrl = PropertiesUtils.ReadProperties(fileName, "model_state_url");
 
 	/**
 	 * 恩 ～ 指定来源

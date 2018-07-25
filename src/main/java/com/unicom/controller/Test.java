@@ -3,10 +3,15 @@ package com.unicom.controller;
 import java.security.Key;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.phw.eop.api.ApiException;
+import org.phw.eop.api.EopClient;
+import org.phw.eop.api.EopReq;
+import org.phw.eop.api.EopRsp;
 import org.springframework.aop.ThrowsAdvice;
 
 import com.alibaba.fastjson.JSON;
@@ -17,9 +22,11 @@ import com.unicom.request.ReqBody;
 import com.unicom.request.ReqHead;
 import com.unicom.request.ReqObj;
 import com.unicom.request.VerificationResponse;
+import com.unicom.utils.EopConfig;
 import com.unicom.utils.RSACrypto;
 import com.unicom.utils.SecurityTool;
 
+import jdk.nashorn.internal.ir.BreakableNode;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -34,7 +41,8 @@ public class Test {
 	private static final String AES = "KN+m/EnRoj2YCmmGHM382w==";
 
 	public static void main(String[] args) throws Exception {
-	 
+
+		TestType3();
 		// String str="";
 		// for (int i = 0; i < 5; i++) {
 		// testExecption(i);
@@ -188,5 +196,22 @@ public class Test {
 		sb.append("appCode").append(appCode).append("timestamp").append(req.getTimestamp()).append("uuid")
 				.append(req.getUuid()).append(HMAC);
 		return SecurityTool.sign(HMAC, sb.toString());
+	}
+
+	public static void TestType3() throws Exception {
+		String eopaction = "kingcard.message.get";
+		EopClient client = new EopClient(EopConfig.url, EopConfig.appcode, EopConfig.signKey);
+		client.setSignAlgorithm("HMAC");
+		EopReq eopReq = new EopReq(eopaction);
+		Map<String, Object> reqMap = new HashMap<>();
+		reqMap.put("channel", "tsy");
+		reqMap.put("type", 3);
+		reqMap.put("timestamp", System.currentTimeMillis());
+		eopReq.put("ReqJson", reqMap); // 订单状态:0-正常订单
+
+		EopRsp eopRsp = client.execute(eopReq);
+
+		String ids = "";
+		System.out.println(eopRsp.getResult());
 	}
 }

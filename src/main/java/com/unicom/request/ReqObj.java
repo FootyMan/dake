@@ -3,17 +3,17 @@ package com.unicom.request;
 public class ReqObj {
 
 	 private ReqHead head;
-	 private ReqBody body;
+	 private Object body;
 	public ReqHead getHead() {
 		return head;
 	}
 	public void setHead(ReqHead head) {
 		this.head = head;
 	}
-	public ReqBody getBody() {
+	public Object getBody() {
 		return body;
 	}
-	public void setBody(ReqBody body) {
+	public void setBody(Object body) {
 		this.body = body;
 	}
 	 

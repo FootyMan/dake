@@ -44,6 +44,7 @@ import com.unicom.request.ReqObj;
 import com.unicom.request.UnicomOrderResponse;
 import com.unicom.request.VerificationResponse;
 import com.unicom.response.BaseResponse;
+import com.unicom.response.NumStateChangeResponse;
 import com.unicom.utils.CommonMethod;
 import com.unicom.utils.DateUtil;
 import com.unicom.utils.EopConfig;
@@ -73,154 +74,179 @@ public class OrderController {
 	@Autowired
 	private VsitDataServiceImpl dataServiceImpl;
 
-	@ResponseBody
-	@RequestMapping(value = "/ordersync", method = RequestMethod.GET)
-	public BaseResponse<?> OrderSync(HttpServletRequest req, HttpServletResponse res) throws Exception {
-
-		BaseResponse<Object> response = new BaseResponse<Object>();
-		String referer = req.getHeader("Referer");
-		if (referer != null && (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url) || referer.contains(EopConfig.comp_rul))) {
-
-			OrderRequest request = new OrderRequest();
-			request.setChannel(req.getParameter("channel") == null ? 0 : Integer.valueOf(req.getParameter("channel")));
-			request.setProductId(
-					req.getParameter("productId") == null ? 0 : Integer.valueOf(req.getParameter("productId")));
-			request.setProductType(req.getParameter("productType") == null ? "" : req.getParameter("productType"));
-			request.setOrderType(
-					req.getParameter("orderType") == null ? 0 : Integer.valueOf(req.getParameter("orderType")));
-			request.setProvinceCode(req.getParameter("provinceCode") == null ? "" : req.getParameter("provinceCode"));
-			request.setCityCode(req.getParameter("cityCode") == null ? "" : req.getParameter("cityCode"));
-			request.setPhoneNum(req.getParameter("phoneNum") == null ? "" : req.getParameter("phoneNum"));
-			request.setContactNum(req.getParameter("contactNum") == null ? "" : req.getParameter("contactNum"));
-			request.setCertName(req.getParameter("certName") == null ? "" : req.getParameter("certName"));
-			request.setCertNo(req.getParameter("certNo") == null ? "" : req.getParameter("certNo"));
-			request.setPostProvinceCode(
-					req.getParameter("postProvinceCode") == null ? "" : req.getParameter("postProvinceCode"));
-			request.setPostCityCode(req.getParameter("postCityCode") == null ? "" : req.getParameter("postCityCode"));
-			request.setPostDistrictCode(
-					req.getParameter("postDistrictCode") == null ? "" : req.getParameter("postDistrictCode"));
-			request.setPostAddr(req.getParameter("postAddr") == null ? "" : req.getParameter("postAddr"));
-			request.setPostName(req.getParameter("postName") == null ? "" : req.getParameter("postName"));
-
-			// @RequestBody OrderRequest request
-			System.out.println("传入：" + JSON.toJSONString(request));
-
-			// 验证身份是否合法
-			boolean isSuccess = OrderBusiness.VerificationIdentity(request);
-			if (isSuccess) {
-
-				String eopaction = "didicard.ordersync";
-				int channel = 1288;
-				String orderNumber = "dake" + StringUtils.GetUnicomOrderNumber();
-				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-				int State = 0;// 订单状态:0-正常订单 1-取消订单;
-				EopClient client = new EopClient(EopConfig.url, EopConfig.appcode, EopConfig.signKey);
-				client.setSignAlgorithm("HMAC");
-				EopReq eopReq = new EopReq(eopaction);
-				Map<String, Object> reqMap = new HashMap<String, Object>();
-				reqMap.put("OrderID", orderNumber); // 业务参数封装
-				reqMap.put("ProductType", request.getProductType()); // 产品标识：咨询联通商城管理员
-				reqMap.put("State", State);
-				reqMap.put("OrderType", request.getOrderType()); // 订单类型:0-物流配送;1-营业厅自提
-				reqMap.put("ProvinceCode", request.getProvinceCode()); // 号码省份
-				reqMap.put("CityCode", request.getCityCode()); // 号码地市
-				reqMap.put("PhoneNum", request.getPhoneNum()); // 号码
-				reqMap.put("ContactNum", request.getContactNum()); // 联系电话
-				reqMap.put("CertName", request.getCertName()); // 入网人姓名
-				reqMap.put("CertNo", request.getCertNo()); // 入网人身份证号码（身份证中的X要求大写
-				reqMap.put("PostProvinceCode", request.getPostProvinceCode()); // 收货省份，物流配送订单必传
-				reqMap.put("PostCityCode", request.getPostCityCode()); // 收货地市，物流配送订单必传
-				reqMap.put("PostDistrictCode", request.getPostDistrictCode()); // 收货区县，物流配送订单必传
-				reqMap.put("PostAddr", request.getPostAddr()); // 详细地址，物流配送订单必传
-				reqMap.put("PostName", request.getPostName()); // 收货人姓名，物流配送订单必传
-				reqMap.put("channel", channel);
-				if (request.getOrderType() == 1) {
-					reqMap.put("StoreCode", request.getStoreCode()); // 营业厅编码，营业厅自提订单必传
-																		// reqMap.put("PostName",
-																		// "张三");
-					// 短信验证码，非必传
-				}
-
-				Date date = new Date();
-				reqMap.put("CreatTime", dateFormat.format(date));// 订单创建时间，格式：yyyy-mm-dd
-																	// hh24:mi:ss
-				reqMap.put("UpdateTime", dateFormat.format(date));// 订单更新时间，格式：yyyy-mm-dd
-																	// hh24:mi:ss
-				reqMap.put("CustId", 99999 + StringUtils.GetRandom());// 号码预占关键字,随机数，需以“99999”开头，最长16位数字
-
-				eopReq.put("REQ_STR", reqMap);
-
-				EopRsp eopRsp = client.execute(eopReq);
-				String jsonString = JSON.toJSONString(eopRsp);
-				// SONObject jsonObject = JSONObject.fromObject(reqMap);
-				System.out.println(jsonString);
-
-				UnicomOrderResponse result = JSON.parseObject(eopRsp.getResult().toString(), UnicomOrderResponse.class);
-				// 0000-传送成功;
-				if (result.getRespCode().equals("0000")) {
-
-					LiantongOrders order = new LiantongOrders();
-					order.setChannel(request.getChannel());
-					order.setOrderid(orderNumber);
-					order.setProduct_id(request.getProductId());
-					order.setProduct_type(request.getProductType());
-					order.setOrder_type(request.getOrderType());
-					order.setProvince_code(request.getProvinceCode());
-					order.setCity_code(request.getCityCode());
-					order.setDistrict_code(request.getPostDistrictCode());
-					order.setPhone_num(request.getPhoneNum());
-					order.setContact_num(request.getContactNum());
-					order.setCert_name(request.getCertName());
-					order.setState(State);
-					order.setCert_no(request.getCertNo());
-					order.setCert_name(request.getCertName());
-					order.setCreate_time(DateUtil.getSecondTimestampTwo(date));
-					order.setUpdate_time(DateUtil.getSecondTimestampTwo(date));
-					order.setLiantong_orderno(result.getOrderNo());
-					order.setPost_province_code(Integer.valueOf(request.getPostProvinceCode()));
-					order.setPost_city_code(Integer.valueOf(request.getPostCityCode()));
-					order.setAddress(request.getPostAddr());
-					ordersServiceImpl.InsertOrder(order);
-
-				} else {
-					response.setMsg(result.getRespDesc());
-				}
-				response.setCode(result.getRespCode());
-				// response.setData(reqMap);
-				LogWrite.Write(reqMap, eopRsp.getResult(), eopaction);
-				// OrderParametersLog(reqMap, eopRsp.getResult(), eopaction);
-			} else {
-				response.setCode("6999");
-				response.setMsg("身份验证不合格");
-			}
-
-		} else {
-			response.setCode("401");
-			response.setMsg("非法请求");
-		}
-
-		return response;
-	}
+	// @ResponseBody
+	// @RequestMapping(value = "/ordersync", method = RequestMethod.GET)
+	// public BaseResponse<?> OrderSync(HttpServletRequest req,
+	// HttpServletResponse res) throws Exception {
+	//
+	// BaseResponse<Object> response = new BaseResponse<Object>();
+	// String referer = req.getHeader("Referer");
+	// if (referer != null && (referer.contains(EopConfig.qa_url) ||
+	// referer.contains(EopConfig.pro_url)
+	// || referer.contains(EopConfig.comp_rul))) {
+	//
+	// OrderRequest request = new OrderRequest();
+	// request.setChannel(req.getParameter("channel") == null ? 0 :
+	// Integer.valueOf(req.getParameter("channel")));
+	// request.setProductId(
+	// req.getParameter("productId") == null ? 0 :
+	// Integer.valueOf(req.getParameter("productId")));
+	// request.setProductType(req.getParameter("productType") == null ? "" :
+	// req.getParameter("productType"));
+	// request.setOrderType(
+	// req.getParameter("orderType") == null ? 0 :
+	// Integer.valueOf(req.getParameter("orderType")));
+	// request.setProvinceCode(req.getParameter("provinceCode") == null ? "" :
+	// req.getParameter("provinceCode"));
+	// request.setCityCode(req.getParameter("cityCode") == null ? "" :
+	// req.getParameter("cityCode"));
+	// request.setPhoneNum(req.getParameter("phoneNum") == null ? "" :
+	// req.getParameter("phoneNum"));
+	// request.setContactNum(req.getParameter("contactNum") == null ? "" :
+	// req.getParameter("contactNum"));
+	// request.setCertName(req.getParameter("certName") == null ? "" :
+	// req.getParameter("certName"));
+	// request.setCertNo(req.getParameter("certNo") == null ? "" :
+	// req.getParameter("certNo"));
+	// request.setPostProvinceCode(
+	// req.getParameter("postProvinceCode") == null ? "" :
+	// req.getParameter("postProvinceCode"));
+	// request.setPostCityCode(req.getParameter("postCityCode") == null ? "" :
+	// req.getParameter("postCityCode"));
+	// request.setPostDistrictCode(
+	// req.getParameter("postDistrictCode") == null ? "" :
+	// req.getParameter("postDistrictCode"));
+	// request.setPostAddr(req.getParameter("postAddr") == null ? "" :
+	// req.getParameter("postAddr"));
+	// request.setPostName(req.getParameter("postName") == null ? "" :
+	// req.getParameter("postName"));
+	//
+	// // @RequestBody OrderRequest request
+	// System.out.println("传入：" + JSON.toJSONString(request));
+	//
+	// // 验证身份是否合法
+	// boolean isSuccess = OrderBusiness.VerificationIdentity(request);
+	// if (isSuccess) {
+	//
+	// String eopaction = "didicard.ordersync";
+	// int channel = 1288;
+	// String orderNumber = "dake" + StringUtils.GetUnicomOrderNumber();
+	// SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd
+	// HH:mm:ss");
+	// int State = 0;// 订单状态:0-正常订单 1-取消订单;
+	// EopClient client = new EopClient(EopConfig.url, EopConfig.appcode,
+	// EopConfig.signKey);
+	// client.setSignAlgorithm("HMAC");
+	// EopReq eopReq = new EopReq(eopaction);
+	// Map<String, Object> reqMap = new HashMap<String, Object>();
+	// reqMap.put("OrderID", orderNumber); // 业务参数封装
+	// reqMap.put("ProductType", request.getProductType()); // 产品标识：咨询联通商城管理员
+	// reqMap.put("State", State);
+	// reqMap.put("OrderType", request.getOrderType()); // 订单类型:0-物流配送;1-营业厅自提
+	// reqMap.put("ProvinceCode", request.getProvinceCode()); // 号码省份
+	// reqMap.put("CityCode", request.getCityCode()); // 号码地市
+	// reqMap.put("PhoneNum", request.getPhoneNum()); // 号码
+	// reqMap.put("ContactNum", request.getContactNum()); // 联系电话
+	// reqMap.put("CertName", request.getCertName()); // 入网人姓名
+	// reqMap.put("CertNo", request.getCertNo()); // 入网人身份证号码（身份证中的X要求大写
+	// reqMap.put("PostProvinceCode", request.getPostProvinceCode()); //
+	// 收货省份，物流配送订单必传
+	// reqMap.put("PostCityCode", request.getPostCityCode()); // 收货地市，物流配送订单必传
+	// reqMap.put("PostDistrictCode", request.getPostDistrictCode()); //
+	// 收货区县，物流配送订单必传
+	// reqMap.put("PostAddr", request.getPostAddr()); // 详细地址，物流配送订单必传
+	// reqMap.put("PostName", request.getPostName()); // 收货人姓名，物流配送订单必传
+	// reqMap.put("channel", channel);
+	// if (request.getOrderType() == 1) {
+	// reqMap.put("StoreCode", request.getStoreCode()); // 营业厅编码，营业厅自提订单必传
+	// // reqMap.put("PostName",
+	// // "张三");
+	// // 短信验证码，非必传
+	// }
+	//
+	// Date date = new Date();
+	// reqMap.put("CreatTime", dateFormat.format(date));// 订单创建时间，格式：yyyy-mm-dd
+	// // hh24:mi:ss
+	// reqMap.put("UpdateTime", dateFormat.format(date));// 订单更新时间，格式：yyyy-mm-dd
+	// // hh24:mi:ss
+	// reqMap.put("CustId", 99999 + StringUtils.GetRandom());//
+	// 号码预占关键字,随机数，需以“99999”开头，最长16位数字
+	//
+	// eopReq.put("REQ_STR", reqMap);
+	//
+	// EopRsp eopRsp = client.execute(eopReq);
+	// String jsonString = JSON.toJSONString(eopRsp);
+	// // SONObject jsonObject = JSONObject.fromObject(reqMap);
+	// System.out.println(jsonString);
+	//
+	// UnicomOrderResponse result =
+	// JSON.parseObject(eopRsp.getResult().toString(),
+	// UnicomOrderResponse.class);
+	// // 0000-传送成功;
+	// if (result.getRespCode().equals("0000")) {
+	//
+	// LiantongOrders order = new LiantongOrders();
+	// order.setChannel(request.getChannel());
+	// order.setOrderid(orderNumber);
+	// order.setProduct_id(request.getProductId());
+	// order.setProduct_type(request.getProductType());
+	// order.setOrder_type(request.getOrderType());
+	// order.setProvince_code(request.getProvinceCode());
+	// order.setCity_code(request.getCityCode());
+	// order.setDistrict_code(request.getPostDistrictCode());
+	// order.setPhone_num(request.getPhoneNum());
+	// order.setContact_num(request.getContactNum());
+	// order.setCert_name(request.getCertName());
+	// order.setState(State);
+	// order.setCert_no(request.getCertNo());
+	// order.setCert_name(request.getCertName());
+	// order.setCreate_time(DateUtil.getSecondTimestampTwo(date));
+	// order.setUpdate_time(DateUtil.getSecondTimestampTwo(date));
+	// order.setLiantong_orderno(result.getOrderNo());
+	// order.setPost_province_code(Integer.valueOf(request.getPostProvinceCode()));
+	// order.setPost_city_code(Integer.valueOf(request.getPostCityCode()));
+	// order.setAddress(request.getPostAddr());
+	// ordersServiceImpl.InsertOrder(order);
+	//
+	// } else {
+	// response.setMsg(result.getRespDesc());
+	// }
+	// response.setCode(result.getRespCode());
+	// // response.setData(reqMap);
+	// LogWrite.Write(reqMap, eopRsp.getResult(), eopaction);
+	// // OrderParametersLog(reqMap, eopRsp.getResult(), eopaction);
+	// } else {
+	// response.setCode("6999");
+	// response.setMsg("身份验证不合格");
+	// }
+	//
+	// } else {
+	// response.setCode("401");
+	// response.setMsg("非法请求");
+	// }
+	//
+	// return response;
+	// }
 
 	// @CrossOrigin(origins = { EopConfig.qa_url, EopConfig.pro_url }, maxAge =
 	// 3600)
-//	@CrossOrigin(origins = "*", maxAge = 3600)
+	// @CrossOrigin(origins = "*", maxAge = 3600)
 	@ResponseBody
-	// @RequestMapping(value = "/ordersyncexec", consumes = {
-	// MediaType.APPLICATION_JSON_VALUE }, produces = {
-	// MediaType.APPLICATION_JSON_VALUE }, method = RequestMethod.POST)
 	@RequestMapping(value = "/ordersyncexec", method = RequestMethod.POST)
-//	@ApiOperation(nickname = "swagger-registe", value = "生成订单", notes = "生成订单")
 	public BaseResponse<?> OrderSyncexec(HttpServletRequest req, HttpServletResponse res) throws Exception {
 
+		UnicomOrderResponse result = new UnicomOrderResponse();
 		BaseResponse<Object> response = new BaseResponse<Object>();
-		String referer = req.getHeader("Referer");//
-		if (referer != null && (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url) || referer.contains(EopConfig.comp_rul))) {
-			OrderRequest request =OrderBusiness.ParameterDecrypt(req);
-			int cert_noCount=ordersServiceImpl.selectOrderCount(request.getCertNo());
+		String referer = req.getHeader("Referer");
+		if (referer != null && (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url)
+				|| referer.contains(EopConfig.comp_rul))) {
+			// 参数解密
+			OrderRequest request = OrderBusiness.ParameterDecrypt(req);
+			// 检查身份证号码是否下单超过五次
+			int cert_noCount = ordersServiceImpl.selectOrderCount(request.getCertNo());
 			System.out.println(cert_noCount);
-			if (cert_noCount>=5) {
-				
+			if (cert_noCount >= 5) {
+
 				response.setCode("6998");
 				response.setMsg("该身份证号下单超过5次");
 				return response;
@@ -228,41 +254,38 @@ public class OrderController {
 			// 验证身份是否合法
 			boolean isSuccess = OrderBusiness.VerificationIdentity(request);
 			if (isSuccess) {
+				// 选占号码是否成功
+				NumStateChangeResponse changeRes = OrderBusiness.NumStateChange(request);
+				if (changeRes.getRspCode().equals("0000")) {
+					String orderNumber = "dake" + StringUtils.GetUnicomOrderNumber();
+					Date date = new Date();
+					int State = 0;// 订单状态:0-正常订单 1-取消订单
+					// 先入库
+					int id = ordersServiceImpl.InsertOrder(request, orderNumber, State, date);
+					// 在请求联通下单接口
+					result = OrderBusiness.OrderSyncSend(request, date, State, orderNumber);
+					// 0000-传送成功;
+					if (result.getRespCode().equals("0000") || result.getRespCode().equals("8888")) {
 
-				String orderNumber = "dake" + StringUtils.GetUnicomOrderNumber();
-				Date date = new Date();
-				int State = 0;// 订单状态:0-正常订单 1-取消订单;
-				UnicomOrderResponse result =OrderBusiness.OrderSyncSend(request,date,State);
-				// 0000-传送成功;
-				if (result.getRespCode().equals("0000")) {
-
-					LiantongOrders order = new LiantongOrders();
-					order.setChannel(request.getChannel());
-					order.setOrderid(orderNumber);
-					order.setProduct_id(request.getProductId());
-					order.setProduct_type(request.getProductType());
-					order.setOrder_type(request.getOrderType());
-					order.setProvince_code(request.getProvinceCode());
-					order.setCity_code(request.getCityCode());
-					order.setDistrict_code(request.getPostDistrictCode());
-					order.setPhone_num(request.getPhoneNum());
-					order.setContact_num(request.getContactNum());
-					order.setCert_name(request.getCertName());
-					order.setState(State);
-					order.setCert_no(request.getCertNo());
-					order.setCert_name(request.getCertName());
-					order.setCreate_time(DateUtil.getSecondTimestampTwo(date));
-					order.setUpdate_time(DateUtil.getSecondTimestampTwo(date));
-					order.setLiantong_orderno(result.getOrderNo());
-					order.setPost_province_code(Integer.valueOf(request.getPostProvinceCode()));
-					order.setPost_city_code(Integer.valueOf(request.getPostCityCode()));
-					order.setAddress(request.getPostAddr());
-					ordersServiceImpl.InsertOrder(order);
-
+						// 更新联通订单号
+						LiantongOrders successOrders = new LiantongOrders();
+						successOrders.setId(id);
+						successOrders.setStatus(1);
+						successOrders.setLiantong_orderno(result.getOrderNo());
+						ordersServiceImpl.UpdateLiantongOrderNumber(successOrders);
+					} else {
+						LiantongOrders errorOrders = new LiantongOrders();
+						errorOrders.setId(id);
+						errorOrders.setRemarks(result.getRespDesc());
+						ordersServiceImpl.UpdateLiantongOrderNumber(errorOrders);
+						response.setMsg(result.getRespDesc());
+					}
 				} else {
-					response.setMsg(result.getRespDesc());
+					// 选占号码失败
+					response.setCode(changeRes.getRspCode());
+					response.setMsg(changeRes.getRspDesc());
 				}
-				response.setCode(result.getRespCode());
+
 			} else {
 				response.setCode("6999");
 				response.setMsg("身份验证不合格");
@@ -271,7 +294,7 @@ public class OrderController {
 			response.setCode("401");
 			response.setMsg("非法请求");
 		}
-
+		response.setCode(result.getRespCode());
 		return response;
 	}
 
@@ -280,7 +303,8 @@ public class OrderController {
 	public void BrowsePage(HttpServletRequest req, HttpServletResponse res) throws Exception {
 
 		String referer = req.getHeader("Referer");
-		if (referer != null && (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url) || referer.contains(EopConfig.comp_rul))) {
+		if (referer != null && (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url)
+				|| referer.contains(EopConfig.comp_rul))) {
 
 			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 			System.out.println("IP地址：" + req.getRemoteAddr());

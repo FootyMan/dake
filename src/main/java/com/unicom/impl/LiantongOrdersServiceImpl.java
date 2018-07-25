@@ -1,5 +1,7 @@
 package com.unicom.impl;
 
+import java.util.Date;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,7 +10,9 @@ import com.unicom.bean.LiantongOrders;
 import com.unicom.bean.LiantongOrdersLogs;
 import com.unicom.dao.LiantongOrdersLogsMapper;
 import com.unicom.dao.LiantongOrdersMapper;
+import com.unicom.request.OrderRequest;
 import com.unicom.utils.DBContextHolder;
+import com.unicom.utils.DateUtil;
 
 @Service("ordersServiceImpl")
 public class LiantongOrdersServiceImpl {
@@ -18,8 +22,41 @@ public class LiantongOrdersServiceImpl {
 	@Autowired
 	private LiantongOrdersLogsMapper ordersLogsMapper;
 
-	public int InsertOrder(LiantongOrders order) {
-		return orderMapper.InsertOrder(order);
+	/***
+	 * 入库
+	 * 
+	 * @param request
+	 * @param orderNumber
+	 * @param State
+	 * @param date
+	 * @return
+	 */
+	public int InsertOrder(OrderRequest request, String orderNumber, int State, Date date) {
+
+		LiantongOrders order = new LiantongOrders();
+		order.setChannel(request.getChannel());
+		order.setOrderid(orderNumber);
+		order.setProduct_id(request.getProductId());
+		order.setProduct_type(request.getProductType());
+		order.setOrder_type(request.getOrderType());
+		order.setProvince_code(request.getProvinceCode());
+		order.setCity_code(request.getCityCode());
+		order.setDistrict_code(request.getPostDistrictCode());
+		order.setPhone_num(request.getPhoneNum());
+		order.setContact_num(request.getContactNum());
+		order.setCert_name(request.getCertName());
+		order.setState(State);
+		order.setCert_no(request.getCertNo());
+		order.setCert_name(request.getCertName());
+		order.setCreate_time(DateUtil.getSecondTimestampTwo(date));
+		order.setUpdate_time(DateUtil.getSecondTimestampTwo(date));
+		order.setLiantong_orderno(0);// 订单号为0
+		order.setPost_province_code(Integer.valueOf(request.getPostProvinceCode()));
+		order.setPost_city_code(Integer.valueOf(request.getPostCityCode()));
+		order.setAddress(request.getPostAddr());
+		order.setStatus(0);
+		orderMapper.InsertOrder(order);
+		return order.getId();
 	}
 
 	public LiantongOrders SelectOrderByorderId(Long liantong_orderno) {
@@ -51,7 +88,22 @@ public class LiantongOrdersServiceImpl {
 		return resul;
 	}
 
+	/**
+	 * 查询身份证号码下单次数
+	 * 
+	 * @param str
+	 * @return
+	 */
 	public int selectOrderCount(String str) {
 		return orderMapper.selectOrderCount(str);
+	}
+
+	/**
+	 * 更新联通订单号
+	 * 
+	 * @return
+	 */
+	public int UpdateLiantongOrderNumber(LiantongOrders order) {
+		return orderMapper.UpdateLiantongOrderNumber(order);
 	}
 }

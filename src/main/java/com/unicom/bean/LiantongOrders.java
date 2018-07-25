@@ -83,7 +83,15 @@ public class LiantongOrders {
 	 * 详细地址
 	 */
 	private String address;
+	/**
+	 * 下单状态 0下单成功 1联通返回订单号激活
+	 */
+	private int status;
 	
+	/**
+	 * 下单失败原因
+	 */
+	private String remarks;
 	public int getId() {
 		return id;
 	}
@@ -203,6 +211,18 @@ public class LiantongOrders {
 	}
 	public void setAddress(String address) {
 		this.address = address;
+	}
+	public int getStatus() {
+		return status;
+	}
+	public void setStatus(int status) {
+		this.status = status;
+	}
+	public String getRemarks() {
+		return remarks;
+	}
+	public void setRemarks(String remarks) {
+		this.remarks = remarks;
 	}
 	
 }

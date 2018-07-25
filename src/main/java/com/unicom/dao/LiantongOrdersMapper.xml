@@ -21,23 +21,25 @@
 		<result column="cert_name" property="cert_name" jdbcType="VARCHAR" />
 		<result column="cert_no" property="cert_no" jdbcType="VARCHAR" />
 		<result column="state" property="state" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
 		<result column="create_time" property="create_time" jdbcType="INTEGER" />
 		<result column="update_time" property="update_time" jdbcType="INTEGER" />
+		<result column="remarks" property="remarks" jdbcType="VARCHAR" />
 	</resultMap>
 	<sql id="order_column">
 		id,channel,orderid,product_id,product_type,order_type,province_code,city_code,district_code,
-		post_province_code,post_city_code,address,phone_num,contact_num,cert_name,cert_no,state,create_time,update_time
+		post_province_code,post_city_code,address,phone_num,contact_num,cert_name,cert_no,state,create_time,update_time,status,remarks
 	</sql>
 
 
 
 
-	<insert id="InsertOrder" parameterType="com.unicom.bean.LiantongOrders">
+	<insert id="InsertOrder" parameterType="com.unicom.bean.LiantongOrders"  keyProperty="id">
 		insert into
 		bj_liantong_orders(channel,orderid,liantong_orderno,product_id,product_type,order_type,province_code,city_code,district_code,
-		post_province_code,post_city_code,address,phone_num,contact_num,cert_name,cert_no,state,create_time,update_time)
+		post_province_code,post_city_code,address,phone_num,contact_num,cert_name,cert_no,state,create_time,update_time,status)
 		values(#{channel},#{orderid},#{liantong_orderno},#{product_id},#{product_type},#{order_type},#{province_code},#{city_code},#{district_code},
-		#{post_province_code},#{post_city_code},#{address},#{phone_num},#{contact_num},#{cert_name},#{cert_no},#{state},#{create_time},#{update_time})
+		#{post_province_code},#{post_city_code},#{address},#{phone_num},#{contact_num},#{cert_name},#{cert_no},#{state},#{create_time},#{update_time},#{status})
 	</insert>
 	
 	<select id="SelectOrderByorderId" resultType="com.unicom.bean.LiantongOrders"
@@ -63,4 +65,21 @@
 	<select  id="selectOrderCount" resultType="java.lang.Integer" parameterType="java.lang.String">
 		SELECT count(1) FROM dake.bj_liantong_orders  where cert_no=#{cert_no}
 	</select>
+	
+	
+	<update id="UpdateLiantongOrderNumber" parameterType="com.unicom.bean.LiantongOrders">
+		update bj_liantong_orders
+		<set>
+		<if test="status>0">
+			status=#{status},
+		</if>
+		<if test="remarks!=null and remarks!=''">
+			remarks=#{remarks},
+		</if>
+		<if test="liantong_orderno>0">
+			liantong_orderno=#{liantong_orderno},
+		</if>
+		</set>
+		where id=#{id}
+	</update>
 </mapper>
