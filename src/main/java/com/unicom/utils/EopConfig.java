@@ -45,6 +45,10 @@ public class EopConfig {
 	 */
 	// 测试地址
 	public final static String qa_url ="http://139.129.97.162:8080";
+	/**
+	 * 测试服务器域名
+	 */
+	public final static String qa_domain="test.m-campaign.net";
 	// 生产地址
 	public final static String pro_url ="www.m-campaign.net";
 	/**

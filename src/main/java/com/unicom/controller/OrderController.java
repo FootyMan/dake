@@ -237,9 +237,8 @@ public class OrderController {
 
 		UnicomOrderResponse result = new UnicomOrderResponse();
 		BaseResponse<Object> response = new BaseResponse<Object>();
-		String referer = req.getHeader("Referer");
-		if (referer != null && (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url)
-				|| referer.contains(EopConfig.comp_rul))) {
+		 
+		if (OrderBusiness.isRefererOk(req)) {
 			// 参数解密
 			OrderRequest request = OrderBusiness.ParameterDecrypt(req);
 			// 检查身份证号码是否下单超过五次
@@ -278,6 +277,7 @@ public class OrderController {
 						errorOrders.setId(id);
 						errorOrders.setRemarks(result.getRespDesc());
 						ordersServiceImpl.UpdateLiantongOrderNumber(errorOrders);
+						response.setCode(result.getRespCode());
 						response.setMsg(result.getRespDesc());
 					}
 				} else {
@@ -294,17 +294,13 @@ public class OrderController {
 			response.setCode("401");
 			response.setMsg("非法请求");
 		}
-		response.setCode(result.getRespCode());
 		return response;
 	}
 
 	@ResponseBody
 	@RequestMapping(value = "/browse", method = RequestMethod.GET)
 	public void BrowsePage(HttpServletRequest req, HttpServletResponse res) throws Exception {
-
-		String referer = req.getHeader("Referer");
-		if (referer != null && (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url)
-				|| referer.contains(EopConfig.comp_rul))) {
+		if (OrderBusiness.isRefererOk(req)) {
 
 			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 			System.out.println("IP地址：" + req.getRemoteAddr());

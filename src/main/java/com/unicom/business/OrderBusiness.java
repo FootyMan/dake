@@ -215,7 +215,8 @@ public class OrderBusiness {
 	 * @return
 	 * @throws Exception
 	 */
-	public static UnicomOrderResponse OrderSyncSend(OrderRequest request, Date date, int State,String orderNumber) throws Exception {
+	public static UnicomOrderResponse OrderSyncSend(OrderRequest request, Date date, int State, String orderNumber)
+			throws Exception {
 		String eopaction = "didicard.ordersync";
 		int channel = 1288;
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -250,9 +251,8 @@ public class OrderBusiness {
 		reqMap.put("UpdateTime", dateFormat.format(date));// 订单更新时间，格式：yyyy-mm-dd
 															// hh24:mi:ss
 		reqMap.put("CustId", 99999 + StringUtils.GetRandom());// 号码预占关键字,随机数，需以“99999”开头，最长16位数字
-		reqMap.put("Uid", orderNumber);//手淘uid
+		reqMap.put("Uid", orderNumber);// 手淘uid
 		eopReq.put("REQ_STR", reqMap);
-		
 
 		UnicomOrderResponse result = null;
 
@@ -347,6 +347,21 @@ public class OrderBusiness {
 					"NumStateChange");
 		}
 		return res;
+	}
+
+	/**
+	 * 来源是否符合
+	 * @param referer
+	 * @return
+	 */
+	public static boolean isRefererOk(HttpServletRequest req)
+	{
+		String referer = req.getHeader("Referer");
+		if (referer != null && (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url)
+				|| referer.contains(EopConfig.comp_rul) || referer.contains(EopConfig.qa_domain))) {
+			return true;
+		}
+		return false;
 	}
 
 }
