@@ -16,13 +16,18 @@ import org.springframework.aop.ThrowsAdvice;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.unicom.business.OrderBusiness;
 import com.unicom.request.BaseVerificationReq;
 import com.unicom.request.BespeakBody;
+import com.unicom.request.NumStateChangeRequest;
+import com.unicom.request.OrderRequest;
 import com.unicom.request.ReqBody;
 import com.unicom.request.ReqHead;
 import com.unicom.request.ReqObj;
 import com.unicom.request.VerificationResponse;
+import com.unicom.response.NumStateChangeResponse;
 import com.unicom.utils.EopConfig;
+import com.unicom.utils.LogWrite;
 import com.unicom.utils.RSACrypto;
 import com.unicom.utils.SecurityTool;
 
@@ -42,7 +47,8 @@ public class Test {
 
 	public static void main(String[] args) throws Exception {
 
-		TestType3();
+		NumStateChange();
+		//TestType3();
 		// String str="";
 		// for (int i = 0; i < 5; i++) {
 		// testExecption(i);
@@ -214,4 +220,105 @@ public class Test {
 		String ids = "";
 		System.out.println(eopRsp.getResult());
 	}
+
+	public static void NumStateChange() {
+
+		ReqObj reqObj = new ReqObj();
+		JSONObject baseReq = new JSONObject();
+		String result = "";
+		try {
+			BaseVerificationReq req = new BaseVerificationReq();
+			req.setAppCode(EopConfig.APP_CODE);
+
+			String dateStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+			ReqHead reqHead = new ReqHead();
+
+			reqHead.setTimestamp(dateStr);
+			reqHead.setUuid(String.valueOf(UUID.randomUUID()));
+			reqHead.setSign(OrderBusiness.makeSign(reqHead, EopConfig.APP_CODE));// 验签
+
+			Numcheck reqBody = new Numcheck();
+			reqBody.setCertId("110101198809090000");
+			reqBody.setContactPhone("18600000000");
+			reqBody.setCheckFlag("0");
+			reqBody.setGoodsId("111801230301");
+
+			reqObj.setBody(reqBody);
+			reqObj.setHead(reqHead);
+
+			req.setReqObj(reqObj);
+
+			// reOjb不需要加密时
+			String desStr = JSON.toJSONString(req);
+			System.out.println(desStr);
+
+			baseReq.put("appCode", EopConfig.APP_CODE);
+			// reqObj节点需要加密时
+			String beforeEnc = JSON.toJSONString(reqObj);// 加密前
+			System.out.println("加密前" + beforeEnc);
+
+			String afterEnc = SecurityTool.encrypt(EopConfig.AES, beforeEnc);// 加密后
+			baseReq.put("reqObj", afterEnc);
+			System.out.println(baseReq);
+
+			okhttp3.MediaType json = okhttp3.MediaType.parse("application/json; charset=utf-8");
+			OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
+			okhttp3.RequestBody requestBody = okhttp3.RequestBody.create(json, JSON.toJSONString(baseReq));
+			Request request = new Request.Builder().url("http://m.10010.com/zop//king/card/order/numcheck")
+					.post(requestBody).build();
+			Response response = client.newCall(request).execute();
+			if (response.isSuccessful()) {
+				result = response.body().string();
+			} else {
+				result = response.message();
+			}
+			System.out.println(result);
+
+		} catch (Exception e) {
+			// TODO: handle exception
+
+		}
+
+	}
+
+	public static class Numcheck {
+		private String certId;
+		private String contactPhone;
+		private String checkFlag;
+		private String goodsId;
+
+		public String getCertId() {
+			return certId;
+		}
+
+		public void setCertId(String certId) {
+			this.certId = certId;
+		}
+
+		public String getContactPhone() {
+			return contactPhone;
+		}
+
+		public void setContactPhone(String contactPhone) {
+			this.contactPhone = contactPhone;
+		}
+
+		public String getCheckFlag() {
+			return checkFlag;
+		}
+
+		public void setCheckFlag(String checkFlag) {
+			this.checkFlag = checkFlag;
+		}
+
+		public String getGoodsId() {
+			return goodsId;
+		}
+
+		public void setGoodsId(String goodsId) {
+			this.goodsId = goodsId;
+		}
+
+	}
+
 }

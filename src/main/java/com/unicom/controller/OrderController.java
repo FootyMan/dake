@@ -31,6 +31,7 @@ import com.unicom.bean.LiantongOrders;
 import com.unicom.bean.LiantongOrdersLogs;
 import com.unicom.bean.VsitData;
 import com.unicom.business.OrderBusiness;
+import com.unicom.controller.Test.Numcheck;
 import com.unicom.impl.LiantongOrdersServiceImpl;
 import com.unicom.impl.VsitDataServiceImpl;
 import com.unicom.request.BaseVerificationReq;
@@ -237,7 +238,7 @@ public class OrderController {
 
 		UnicomOrderResponse result = new UnicomOrderResponse();
 		BaseResponse<Object> response = new BaseResponse<Object>();
-		 
+
 		if (OrderBusiness.isRefererOk(req)) {
 			// 参数解密
 			OrderRequest request = OrderBusiness.ParameterDecrypt(req);
@@ -277,9 +278,10 @@ public class OrderController {
 						errorOrders.setId(id);
 						errorOrders.setRemarks(result.getRespDesc());
 						ordersServiceImpl.UpdateLiantongOrderNumber(errorOrders);
-						response.setCode(result.getRespCode());
-						response.setMsg(result.getRespDesc());
 					}
+					// 设置返回下单成功或者失败状态和描述
+					response.setCode(result.getRespCode());
+					response.setMsg(result.getRespDesc());
 				} else {
 					// 选占号码失败
 					response.setCode(changeRes.getRspCode());
@@ -392,5 +394,67 @@ public class OrderController {
 		LogWrite.Write(reqMap, eopRsp.getResult(), eopaction);
 		return obj;
 	}
+
+//	@ResponseBody
+//	@RequestMapping(value = "/numbercheck", method = RequestMethod.GET)
+//	public String Numbercheck() throws Exception {
+//
+//		ReqObj reqObj = new ReqObj();
+//		JSONObject baseReq = new JSONObject();
+//		String result = "";
+//		try {
+//			BaseVerificationReq req = new BaseVerificationReq();
+//			req.setAppCode(EopConfig.APP_CODE);
+//
+//			String dateStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+//			ReqHead reqHead = new ReqHead();
+//
+//			reqHead.setTimestamp(dateStr);
+//			reqHead.setUuid(String.valueOf(UUID.randomUUID()));
+//			reqHead.setSign(OrderBusiness.makeSign(reqHead, EopConfig.APP_CODE));// 验签
+//
+//			Numcheck reqBody = new Numcheck();
+//			reqBody.setCertId("110101198809090000");
+//			reqBody.setContactPhone("18600000000");
+//			reqBody.setCheckFlag("0");
+//			reqBody.setGoodsId("111801230301");
+//
+//			reqObj.setBody(reqBody);
+//			reqObj.setHead(reqHead);
+//
+//			req.setReqObj(reqObj);
+//
+//			// reOjb不需要加密时
+//			String desStr = JSON.toJSONString(req);
+//			System.out.println(desStr);
+//
+//			baseReq.put("appCode", EopConfig.APP_CODE);
+//			// reqObj节点需要加密时
+//			String beforeEnc = JSON.toJSONString(reqObj);// 加密前
+//			System.out.println("加密前" + beforeEnc);
+//
+//			String afterEnc = SecurityTool.encrypt(EopConfig.AES, beforeEnc);// 加密后
+//			baseReq.put("reqObj", afterEnc);
+//			System.out.println(baseReq);
+//
+//			okhttp3.MediaType json = okhttp3.MediaType.parse("application/json; charset=utf-8");
+//			OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
+//			okhttp3.RequestBody requestBody = okhttp3.RequestBody.create(json, JSON.toJSONString(baseReq));
+//			Request request = new Request.Builder().url("http://demo.mall.10010.com:8104/zop/king/card/order/numcheck")
+//					.post(requestBody).build();
+//			Response response = client.newCall(request).execute();
+//			if (response.isSuccessful()) {
+//				result = response.body().string();
+//			} else {
+//				result = response.message();
+//			}
+//			System.out.println(result);
+//
+//		} catch (Exception e) {
+//			// TODO: handle exception
+//
+//		}
+//		return result;
+//	}
 
 }

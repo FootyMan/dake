@@ -304,7 +304,7 @@ public class OrderBusiness {
 			reqBody.setProvinceCode(model.getProvinceCode());
 			reqBody.setSerialNumber(model.getPhoneNum());
 			reqBody.setOccupiedFlag("S");// S选占 D延时选占 R释放资源
-			reqBody.setOccupiedTimeTag("S1");// S1选占30分钟 S2选占一小时 S3选占3天 S8选占一个月
+			reqBody.setOccupiedTimeTag("S8");// S1选占30分钟 S2选占一小时 S3选占3天 S8选占一个月
 												// D1延时选占到次日的23点, T+1
 												// D2延时选占到后天的23点, T+2 D8延时选占一个月
 												// D9延时选占，永久选占,2059年12月
