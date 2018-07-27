@@ -2,7 +2,6 @@ package com.unicom.business;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -12,13 +11,14 @@ import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.phw.eop.api.ApiException;
+import org.apache.taglibs.standard.lang.jstl.NullLiteral;
 import org.phw.eop.api.EopClient;
 import org.phw.eop.api.EopReq;
 import org.phw.eop.api.EopRsp;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.unicom.controller.Test.Numcheck;
 import com.unicom.request.BaseVerificationReq;
 import com.unicom.request.NumStateChangeRequest;
 import com.unicom.request.OrderLogResponse;
@@ -28,13 +28,15 @@ import com.unicom.request.ReqHead;
 import com.unicom.request.ReqObj;
 import com.unicom.request.UnicomOrderResponse;
 import com.unicom.request.VerificationResponse;
-import com.unicom.response.NumStateChangeResponse;
+import com.unicom.response.NumberCheckResponse;
+import com.unicom.response.ZopBaseResponse;
 import com.unicom.utils.EopConfig;
 import com.unicom.utils.LogWrite;
 import com.unicom.utils.RSAUtils;
 import com.unicom.utils.SecurityTool;
 import com.unicom.utils.StringUtils;
 
+import edu.umd.cs.findbugs.annotations.UnknownNullness;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -60,7 +62,7 @@ public class OrderBusiness {
 			// 去掉最后一个逗号
 			ids = ids.substring(0, ids.length() - 1);
 			String eopaction = "kingcard.message.del";
-			EopClient client = new EopClient(EopConfig.url, EopConfig.appcode, EopConfig.signKey);
+			EopClient client = new EopClient(EopConfig.eop_url, EopConfig.appcode, EopConfig.signKey);
 			client.setSignAlgorithm("HMAC");
 			EopReq eopReq = new EopReq(eopaction);
 			Map<String, Object> reqMap = new HashMap<>();
@@ -129,7 +131,8 @@ public class OrderBusiness {
 			okhttp3.MediaType json = okhttp3.MediaType.parse("application/json; charset=utf-8");
 			OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
 			okhttp3.RequestBody requestBody = okhttp3.RequestBody.create(json, JSON.toJSONString(baseReq));
-			Request request = new Request.Builder().url(EopConfig.URL).post(requestBody).build();
+			Request request = new Request.Builder().url(EopConfig.zop_url + "/king/identity/cust/v1").post(requestBody)
+					.build();
 			Response response = client.newCall(request).execute();
 			if (response.isSuccessful()) {
 				result = response.body().string();
@@ -220,7 +223,7 @@ public class OrderBusiness {
 		String eopaction = "didicard.ordersync";
 		int channel = 1288;
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		EopClient client = new EopClient(EopConfig.url, EopConfig.appcode, EopConfig.signKey);
+		EopClient client = new EopClient(EopConfig.eop_url, EopConfig.appcode, EopConfig.signKey);
 		client.setSignAlgorithm("HMAC");
 		EopReq eopReq = new EopReq(eopaction);
 		Map<String, Object> reqMap = new HashMap<String, Object>();
@@ -250,7 +253,7 @@ public class OrderBusiness {
 															// hh24:mi:ss
 		reqMap.put("UpdateTime", dateFormat.format(date));// 订单更新时间，格式：yyyy-mm-dd
 															// hh24:mi:ss
-		reqMap.put("CustId", 99999 + StringUtils.GetRandom());// 号码预占关键字,随机数，需以“99999”开头，最长16位数字
+		reqMap.put("CustId", EopConfig.pre_keyword);// 号码预占关键字,随机数，需以“99999”开头，最长16位数字
 		reqMap.put("Uid", orderNumber);// 手淘uid
 		eopReq.put("REQ_STR", reqMap);
 
@@ -280,88 +283,184 @@ public class OrderBusiness {
 	 * 
 	 * @param request
 	 * @return
+	 * @throws Exception
 	 */
-	public static NumStateChangeResponse NumStateChange(OrderRequest model) {
+	public static ZopBaseResponse NumStateChange(OrderRequest model) throws Exception {
 
-		NumStateChangeResponse res = new NumStateChangeResponse();
+		ZopBaseResponse res = null;
 		ReqObj reqObj = new ReqObj();
 		JSONObject baseReq = new JSONObject();
 		String result = "";
-		try {
-			BaseVerificationReq req = new BaseVerificationReq();
-			req.setAppCode(EopConfig.APP_CODE);
 
-			String dateStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
-			ReqHead reqHead = new ReqHead();
+		BaseVerificationReq req = new BaseVerificationReq();
+		req.setAppCode(EopConfig.APP_CODE);
 
-			reqHead.setTimestamp(dateStr);
-			reqHead.setUuid(String.valueOf(UUID.randomUUID()));
-			reqHead.setSign(OrderBusiness.makeSign(reqHead, EopConfig.APP_CODE));// 验签
+		String dateStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+		ReqHead reqHead = new ReqHead();
 
-			NumStateChangeRequest reqBody = new NumStateChangeRequest();
-			reqBody.setCertCode(model.getCertNo());
-			reqBody.setCityCode(model.getCityCode());
-			reqBody.setProvinceCode(model.getProvinceCode());
-			reqBody.setSerialNumber(model.getPhoneNum());
-			reqBody.setOccupiedFlag("S");// S选占 D延时选占 R释放资源
-			reqBody.setOccupiedTimeTag("S8");// S1选占30分钟 S2选占一小时 S3选占3天 S8选占一个月
-												// D1延时选占到次日的23点, T+1
-												// D2延时选占到后天的23点, T+2 D8延时选占一个月
-												// D9延时选占，永久选占,2059年12月
-			reqBody.setProKey(model.getCertNo());// 资源预占关键字
-			reqObj.setBody(reqBody);
-			reqObj.setHead(reqHead);
+		reqHead.setTimestamp(dateStr);
+		reqHead.setUuid(String.valueOf(UUID.randomUUID()));
+		reqHead.setSign(OrderBusiness.makeSign(reqHead, EopConfig.APP_CODE));// 验签
 
-			req.setReqObj(reqObj);
+		NumStateChangeRequest reqBody = new NumStateChangeRequest();
+		reqBody.setCertCode(model.getCertNo());
+		reqBody.setCityCode(model.getCityCode());
+		reqBody.setProvinceCode(model.getProvinceCode());
+		reqBody.setSerialNumber(model.getPhoneNum());
+		reqBody.setOccupiedFlag("S");// S选占 D延时选占 R释放资源
+		reqBody.setOccupiedTimeTag("S8");// S1选占30分钟 S2选占一小时 S3选占3天 S8选占一个月
+											// D1延时选占到次日的23点, T+1
+											// D2延时选占到后天的23点, T+2 D8延时选占一个月
+											// D9延时选占，永久选占,2059年12月
+		reqBody.setProKey(EopConfig.pre_keyword);// 资源预占关键字
+		reqObj.setBody(reqBody);
+		reqObj.setHead(reqHead);
 
-			// reOjb不需要加密时
-			String desStr = JSON.toJSONString(req);
-			System.out.println(desStr);
+		req.setReqObj(reqObj);
 
-			baseReq.put("appCode", EopConfig.APP_CODE);
-			// reqObj节点需要加密时
-			String beforeEnc = JSON.toJSONString(reqObj);// 加密前
-			System.out.println("加密前" + beforeEnc);
+		// reOjb不需要加密时
+		String desStr = JSON.toJSONString(req);
+		System.out.println(desStr);
 
-			String afterEnc = SecurityTool.encrypt(EopConfig.AES, beforeEnc);// 加密后
-			baseReq.put("reqObj", afterEnc);
-			System.out.println(baseReq);
+		baseReq.put("appCode", EopConfig.APP_CODE);
+		// reqObj节点需要加密时
+		String beforeEnc = JSON.toJSONString(reqObj);// 加密前
+		System.out.println("加密前" + beforeEnc);
 
-			okhttp3.MediaType json = okhttp3.MediaType.parse("application/json; charset=utf-8");
-			OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
-			okhttp3.RequestBody requestBody = okhttp3.RequestBody.create(json, JSON.toJSONString(baseReq));
-			Request request = new Request.Builder().url(EopConfig.ModelStateUrl).post(requestBody).build();
+		String afterEnc = SecurityTool.encrypt(EopConfig.AES, beforeEnc);// 加密后
+		baseReq.put("reqObj", afterEnc);
+		System.out.println(baseReq);
+
+		okhttp3.MediaType json = okhttp3.MediaType.parse("application/json; charset=utf-8");
+		OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
+		okhttp3.RequestBody requestBody = okhttp3.RequestBody.create(json, JSON.toJSONString(baseReq));
+
+		for (int i = 0; i < 6; i++) {
+
+			Request request = new Request.Builder().url(EopConfig.zop_url + "/num/state/change/v1").post(requestBody)
+					.build();
 			Response response = client.newCall(request).execute();
 			if (response.isSuccessful()) {
 				result = response.body().string();
 			} else {
 				result = response.message();
 			}
-			res = JSONObject.parseObject(result, NumStateChangeResponse.class);
 
 			LogWrite.Write("加密前:" + JSONObject.toJSONString(reqObj) + "加密后:" + baseReq.toString(), result,
 					"NumStateChange");
-		} catch (Exception e) {
-			// TODO: handle exception
-			LogWrite.Write("加密前:" + JSONObject.toJSONString(reqObj) + "加密后:" + baseReq.toString(), result,
-					"NumStateChange");
+			if (!StringUtils.isEmpty(result)) {
+				res = JSONObject.parseObject(result, ZopBaseResponse.class);
+				break;
+			}
+
+		}
+
+		if (res == null) {
+			res = new ZopBaseResponse();
+			res.setRspCode("9999");
+			res.setRspDesc("系统繁忙,请稍后重试");
 		}
 		return res;
 	}
 
 	/**
 	 * 来源是否符合
+	 * 
 	 * @param referer
 	 * @return
 	 */
-	public static boolean isRefererOk(HttpServletRequest req)
-	{
+	public static boolean isRefererOk(HttpServletRequest req) {
 		String referer = req.getHeader("Referer");
 		if (referer != null && (referer.contains(EopConfig.qa_url) || referer.contains(EopConfig.pro_url)
 				|| referer.contains(EopConfig.comp_rul) || referer.contains(EopConfig.qa_domain))) {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * 检查号码
+	 * 
+	 * @param model
+	 * @return
+	 * @throws Exception
+	 */
+	public static NumberCheckResponse Numbercheck(OrderRequest model) throws Exception {
+
+		NumberCheckResponse checkRes = new NumberCheckResponse();
+		checkRes.setResultCode("0000");
+
+		ReqObj reqObj = new ReqObj();
+		JSONObject baseReq = new JSONObject();
+
+		BaseVerificationReq req = new BaseVerificationReq();
+		req.setAppCode(EopConfig.APP_CODE);
+
+		String dateStr = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+		ReqHead reqHead = new ReqHead();
+
+		reqHead.setTimestamp(dateStr);
+		reqHead.setUuid(String.valueOf(UUID.randomUUID()));
+		reqHead.setSign(OrderBusiness.makeSign(reqHead, EopConfig.APP_CODE));// 验签
+
+		Numcheck reqBody = new Numcheck();
+		reqBody.setCertId(model.getCertNo());
+		reqBody.setContactPhone(model.getContactNum());
+		reqBody.setCheckFlag("1");
+		// 默认无限卡 ProductType=37
+		// goodsId = 号码归属地省份code + 商品id
+		String goodsid = model.getProvinceCode() + EopConfig.infinite_card;
+		if (model.getProductType().equals("38")) {
+
+			// 日租卡
+			goodsid = model.getProvinceCode() + EopConfig.daily_rent_card;
+		}
+		reqBody.setGoodsId(goodsid);
+
+		reqObj.setBody(reqBody);
+		reqObj.setHead(reqHead);
+
+		req.setReqObj(reqObj);
+
+		// reOjb不需要加密时
+		String desStr = JSON.toJSONString(req);
+		System.out.println(desStr);
+
+		baseReq.put("appCode", EopConfig.APP_CODE);
+		// reqObj节点需要加密时
+		String beforeEnc = JSON.toJSONString(reqObj);// 加密前
+		System.out.println("加密前" + beforeEnc);
+
+		String afterEnc = SecurityTool.encrypt(EopConfig.AES, beforeEnc);// 加密后
+		baseReq.put("reqObj", afterEnc);
+		System.out.println(baseReq);
+
+		okhttp3.MediaType json = okhttp3.MediaType.parse("application/json; charset=utf-8");
+		OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
+		okhttp3.RequestBody requestBody = okhttp3.RequestBody.create(json, JSON.toJSONString(baseReq));
+
+		String result = "";
+		for (int i = 0; i < 3; i++) {
+			Request request = new Request.Builder().url(EopConfig.zop_url + "/king/card/order/numcheck")
+					.post(requestBody).build();
+
+			Response response = client.newCall(request).execute();
+			if (response.isSuccessful()) {
+				result = response.body().string();
+			} else {
+				result = response.message();
+			}
+			LogWrite.Write("加密前:" + beforeEnc + "加密后:" + afterEnc, result, "numcheck");
+			ZopBaseResponse res = JSONObject.parseObject(result, ZopBaseResponse.class);
+			NumberCheckResponse ck = JSONObject.parseObject(res.getBody(), NumberCheckResponse.class);
+			if (res.getRspCode().equals("0000") && ck != null) {
+
+				checkRes = ck;
+				break;
+			}
+		}
+		return checkRes;
+
 	}
 
 }

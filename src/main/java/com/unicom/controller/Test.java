@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.aspectj.weaver.ast.Var;
 import org.phw.eop.api.ApiException;
 import org.phw.eop.api.EopClient;
 import org.phw.eop.api.EopReq;
@@ -25,7 +26,8 @@ import com.unicom.request.ReqBody;
 import com.unicom.request.ReqHead;
 import com.unicom.request.ReqObj;
 import com.unicom.request.VerificationResponse;
-import com.unicom.response.NumStateChangeResponse;
+import com.unicom.response.NumberCheckResponse;
+import com.unicom.response.ZopBaseResponse;
 import com.unicom.utils.EopConfig;
 import com.unicom.utils.LogWrite;
 import com.unicom.utils.RSACrypto;
@@ -47,6 +49,10 @@ public class Test {
 
 	public static void main(String[] args) throws Exception {
 
+	//String dd="{\"rspCode\":\"0000\",\"rspDesc\":\"操作成功\",\"uuid\":\"67fe5c38-9416-4aa2-9c1b-8f297d5054ef\",\"body\":{\"resultCode\":\"0000\",\"resultDesc\":\"成功\"}}";
+	String dd="{\"rspCode\":\"0000\",\"rspDesc\":\"操作成功\",\"uuid\":\"67fe5c38-9416-4aa2-9c1b-8f297d5054ef\",\"body\":\"\"}";
+	ZopBaseResponse res = JSONObject.parseObject(dd, ZopBaseResponse.class);
+	NumberCheckResponse c=JSONObject.parseObject(res.getBody(), NumberCheckResponse.class);
 		NumStateChange();
 		//TestType3();
 		// String str="";
@@ -206,7 +212,7 @@ public class Test {
 
 	public static void TestType3() throws Exception {
 		String eopaction = "kingcard.message.get";
-		EopClient client = new EopClient(EopConfig.url, EopConfig.appcode, EopConfig.signKey);
+		EopClient client = new EopClient(EopConfig.eop_url, EopConfig.appcode, EopConfig.signKey);
 		client.setSignAlgorithm("HMAC");
 		EopReq eopReq = new EopReq(eopaction);
 		Map<String, Object> reqMap = new HashMap<>();
