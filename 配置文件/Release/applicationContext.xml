@@ -18,7 +18,7 @@
 		<property name="url"
 			value="jdbc:mysql://rm-2zeq5fz691j60j4o7po.mysql.rds.aliyuncs.com:3306/dake?zeroDateTimeBehavior=convertToNull&amp;;autoReconnect=true" />
 		<property name="username" value="dake" />
-		<property name="password" value="qa1z2OK3M$%^" />
+		<property name="password" value="ltdk1qazxsw2!@#" />
 		<!-- druid 连接池的 -->
 		<property name="filters" value="stat" />
 		<!--maxActive: 最大连接数量 -->

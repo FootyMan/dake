@@ -190,6 +190,11 @@ public class OrderBusiness {
 
 		// System.out.println(sb.toString());
 		// System.out.println(jsonObject.get("channel"));
+		request.setOtaChannel("1288");
+		if(jsonObject.containsKey("otaChannel"))
+		{
+			request.setOtaChannel(RSAUtils.decryptBase64(jsonObject.get("otaChannel").toString()));
+		}
 		request.setChannel(Integer.valueOf(RSAUtils.decryptBase64(jsonObject.get("channel").toString())));
 		System.out.println("渠道：" + request.getChannel());
 		request.setProductId(Integer.valueOf(RSAUtils.decryptBase64(jsonObject.get("productId").toString())));
@@ -221,7 +226,7 @@ public class OrderBusiness {
 	public static UnicomOrderResponse OrderSyncSend(OrderRequest request, Date date, int State, String orderNumber)
 			throws Exception {
 		String eopaction = "didicard.ordersync";
-		int channel = 1288;
+//		int channel = 1288;
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		EopClient client = new EopClient(EopConfig.eop_url, EopConfig.appcode, EopConfig.signKey);
 		client.setSignAlgorithm("HMAC");
@@ -242,7 +247,7 @@ public class OrderBusiness {
 		reqMap.put("PostDistrictCode", request.getPostDistrictCode()); // 收货区县，物流配送订单必传
 		reqMap.put("PostAddr", request.getPostAddr()); // 详细地址，物流配送订单必传
 		reqMap.put("PostName", request.getPostName()); // 收货人姓名，物流配送订单必传
-		reqMap.put("channel", channel);
+		reqMap.put("channel", request.getOtaChannel());
 		if (request.getOrderType() == 1) {
 			reqMap.put("StoreCode", request.getStoreCode()); // 营业厅编码，营业厅自提订单必传
 																// reqMap.put("PostName",
@@ -267,8 +272,9 @@ public class OrderBusiness {
 
 			result = JSON.parseObject(eopRsp.getResult().toString(), UnicomOrderResponse.class);
 			LogWrite.Write(reqMap, eopRsp.getResult(), eopaction);
-			if (result.getRespCode().equals("0005") || result.getRespCode().equals("9999")) {
+			if (result.getRespCode().equals("0005") || result.getRespCode().equals("9999") || result.getRespCode().equals("L001") ) {
 				System.out.println("重试");
+				Thread.sleep(500);
 			} else {
 				break;
 			}

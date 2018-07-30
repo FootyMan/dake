@@ -43,7 +43,10 @@ public class OrderRequest {
 	@ApiModelProperty(value = "营业厅编码  订单类型为1 必须传！")
 	private String storeCode;
 	
-
+	
+	@ApiModelProperty(value = "给联通传送的渠道编码")
+	private String otaChannel;
+	
 	public int getChannel() {
 		return channel;
 	}
@@ -170,6 +173,14 @@ public class OrderRequest {
 
 	public void setProductId(int productId) {
 		this.productId = productId;
+	}
+
+	public String getOtaChannel() {
+		return otaChannel;
+	}
+
+	public void setOtaChannel(String otaChannel) {
+		this.otaChannel = otaChannel;
 	}
 	
 

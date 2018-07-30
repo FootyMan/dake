@@ -114,7 +114,7 @@ public class OrderController {
 					} else {
 						LiantongOrders errorOrders = new LiantongOrders();
 						errorOrders.setId(id);
-						errorOrders.setRemarks(result.getRespDesc());
+						errorOrders.setRemarks(result.getRespCode()+result.getRespDesc());
 						ordersServiceImpl.UpdateLiantongOrderNumber(errorOrders);
 					}
 					// 设置返回下单成功或者失败状态和描述
