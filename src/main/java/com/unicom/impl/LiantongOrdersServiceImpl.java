@@ -2,6 +2,8 @@ package com.unicom.impl;
 
 import java.util.Date;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +13,7 @@ import com.unicom.bean.LiantongOrdersLogs;
 import com.unicom.dao.LiantongOrdersLogsMapper;
 import com.unicom.dao.LiantongOrdersMapper;
 import com.unicom.request.OrderRequest;
+import com.unicom.utils.CommonMethod;
 import com.unicom.utils.DBContextHolder;
 import com.unicom.utils.DateUtil;
 
@@ -31,8 +34,9 @@ public class LiantongOrdersServiceImpl {
 	 * @param date
 	 * @return
 	 */
-	public int InsertOrder(OrderRequest request, String orderNumber, int State, Date date) {
+	public int InsertOrder(OrderRequest request, String orderNumber, int State, Date date,HttpServletRequest req) {
 
+		String ip = CommonMethod.getIp(req);
 		LiantongOrders order = new LiantongOrders();
 		order.setChannel(request.getChannel());
 		order.setOrderid(orderNumber);
@@ -55,6 +59,8 @@ public class LiantongOrdersServiceImpl {
 		order.setPost_city_code(Integer.valueOf(request.getPostCityCode()));
 		order.setAddress(request.getPostAddr());
 		order.setStatus(0);
+		order.setOtachannel(Integer.valueOf(request.getOtaChannel()));
+		order.setIp(ip);
 		orderMapper.InsertOrder(order);
 		return order.getId();
 	}

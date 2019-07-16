@@ -92,6 +92,14 @@ public class LiantongOrders {
 	 * 下单失败原因
 	 */
 	private String remarks;
+	/**
+	 * 下单IP
+	 */
+	private String ip; 
+	/**
+	 * 下单
+	 */
+	private int otachannel;
 	public int getId() {
 		return id;
 	}
@@ -223,6 +231,18 @@ public class LiantongOrders {
 	}
 	public void setRemarks(String remarks) {
 		this.remarks = remarks;
+	}
+	public String getIp() {
+		return ip;
+	}
+	public void setIp(String ip) {
+		this.ip = ip;
+	}
+	public int getOtachannel() {
+		return otachannel;
+	}
+	public void setOtachannel(int otachannel) {
+		this.otachannel = otachannel;
 	}
 	
 }

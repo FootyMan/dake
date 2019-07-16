@@ -25,10 +25,12 @@
 		<result column="create_time" property="create_time" jdbcType="INTEGER" />
 		<result column="update_time" property="update_time" jdbcType="INTEGER" />
 		<result column="remarks" property="remarks" jdbcType="VARCHAR" />
+		<result column="ip" property="ip" jdbcType="VARCHAR" />
+		<result column="otachannel" property="otachannel" jdbcType="INTEGER" />
 	</resultMap>
 	<sql id="order_column">
 		id,channel,orderid,product_id,product_type,order_type,province_code,city_code,district_code,
-		post_province_code,post_city_code,address,phone_num,contact_num,cert_name,cert_no,state,create_time,update_time,status,remarks
+		post_province_code,post_city_code,address,phone_num,contact_num,cert_name,cert_no,state,create_time,update_time,status,remarks,ip,otachannel
 	</sql>
 
 
@@ -37,9 +39,10 @@
 	<insert id="InsertOrder" parameterType="com.unicom.bean.LiantongOrders"  keyProperty="id">
 		insert into
 		bj_liantong_orders(channel,orderid,liantong_orderno,product_id,product_type,order_type,province_code,city_code,district_code,
-		post_province_code,post_city_code,address,phone_num,contact_num,cert_name,cert_no,state,create_time,update_time,status)
+		post_province_code,post_city_code,address,phone_num,contact_num,cert_name,cert_no,state,create_time,update_time,status,ip,otachannel)
 		values(#{channel},#{orderid},#{liantong_orderno},#{product_id},#{product_type},#{order_type},#{province_code},#{city_code},#{district_code},
-		#{post_province_code},#{post_city_code},#{address},#{phone_num},#{contact_num},#{cert_name},#{cert_no},#{state},#{create_time},#{update_time},#{status})
+		#{post_province_code},#{post_city_code},#{address},#{phone_num},#{contact_num},#{cert_name},#{cert_no},#{state},#{create_time},#{update_time},#{status}
+		,#{ip},#{otachannel})
 	</insert>
 	
 	<select id="SelectOrderByorderId" resultType="com.unicom.bean.LiantongOrders"

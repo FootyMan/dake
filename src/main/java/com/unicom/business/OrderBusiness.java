@@ -15,6 +15,8 @@ import org.apache.taglibs.standard.lang.jstl.NullLiteral;
 import org.phw.eop.api.EopClient;
 import org.phw.eop.api.EopReq;
 import org.phw.eop.api.EopRsp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -23,6 +25,7 @@ import com.unicom.request.BaseVerificationReq;
 import com.unicom.request.NumStateChangeRequest;
 import com.unicom.request.OrderLogResponse;
 import com.unicom.request.OrderRequest;
+import com.unicom.request.OrderSyncZopBodyRequest;
 import com.unicom.request.ReqBody;
 import com.unicom.request.ReqHead;
 import com.unicom.request.ReqObj;
@@ -42,7 +45,9 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 public class OrderBusiness {
-
+	
+	private static final Logger log = LoggerFactory.getLogger(OrderBusiness.class);
+	
 	public static String makeSign(ReqHead req, String appCode) throws Exception {
 		StringBuffer sb = new StringBuffer();
 		// appCode+head节点（除sign节点,字母升序）+hmac密钥
@@ -429,17 +434,14 @@ public class OrderBusiness {
 		req.setReqObj(reqObj);
 
 		// reOjb不需要加密时
-		String desStr = JSON.toJSONString(req);
-		System.out.println(desStr);
+		//String desStr = JSON.toJSONString(req);
 
 		baseReq.put("appCode", EopConfig.APP_CODE);
 		// reqObj节点需要加密时
 		String beforeEnc = JSON.toJSONString(reqObj);// 加密前
-		System.out.println("加密前" + beforeEnc);
 
 		String afterEnc = SecurityTool.encrypt(EopConfig.AES, beforeEnc);// 加密后
 		baseReq.put("reqObj", afterEnc);
-		System.out.println(baseReq);
 
 		okhttp3.MediaType json = okhttp3.MediaType.parse("application/json; charset=utf-8");
 		OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
@@ -467,6 +469,118 @@ public class OrderBusiness {
 		}
 		return checkRes;
 
+	}
+	/**
+	 * 发送同步订单
+	 *
+	 * @param request
+	 * @param date
+	 * @param State
+	 * @return
+	 * @throws Exception
+	 */
+	public static UnicomOrderResponse OrderSyncSendByZop(OrderRequest request, Date date, int State, String orderNumber) {
+
+		UnicomOrderResponse result = new UnicomOrderResponse();
+		String eopaction = "didicard.ordersyncV2";
+		EopReq eopReq = new EopReq(eopaction);
+		try {
+			JSONObject baseReq = new JSONObject();
+			BaseVerificationReq req = new BaseVerificationReq();
+			req.setAppCode(EopConfig.APP_CODE);
+			baseReq.put("appCode", EopConfig.APP_CODE);
+
+			ReqObj reqObj = new ReqObj();
+			// int channel = 1288;
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+			//head
+			ReqHead head = new ReqHead();
+			head.setTimestamp(dateFormat.format(new Date()));
+			head.setUuid(String.valueOf(UUID.randomUUID()));
+			head.setSign(OrderBusiness.makeSign(head, EopConfig.APP_CODE));// 验签
+			//body
+			OrderSyncZopBodyRequest body=new OrderSyncZopBodyRequest();
+			body.setOrderID(orderNumber);
+			body.setProductType(request.getProductType());//// 产品标识：咨询联通商城管理员
+			body.setState(String.valueOf(State));
+			body.setOrderType(String.valueOf(request.getOrderType()));//订单类型:0-物流配送;1-营业厅自提
+			body.setProvinceCode(request.getProvinceCode());//号码省份
+			body.setCityCode(request.getCityCode());//号码地市
+			body.setPhoneNum(request.getPhoneNum());//号码
+			body.setContactNum(request.getContactNum());//联系电话
+			body.setCertName(request.getCertName());//入网人姓名
+			body.setCertNo(request.getCertNo());//入网人身份证号码（身份证中的X要求大写
+			body.setPostProvinceCode(request.getPostProvinceCode());//收货省份，物流配送订单必传
+			body.setPostCityCode(request.getPostCityCode());//收货地市，物流配送订单必传
+			body.setPostDistrictCode(request.getPostDistrictCode());//收货区县，物流配送订单必传
+			body.setPostAddr(request.getPostAddr());//详细地址，物流配送订单必传
+			body.setPostName(request.getPostName());//收货人姓名，物流配送订单必传
+			body.setChannel(request.getOtaChannel());
+			if (request.getOrderType() == 1) {
+				body.setStoreCode(request.getStoreCode());//营业厅编码，营业厅自提订单必传
+			}
+			body.setCreatTime(dateFormat.format(date));//订单创建时间，格式：yyyy-mm-dd hh24:mi:ss
+			body.setUpdateTime(dateFormat.format(date));//订单更新时间，格式：yyyy-mm-dd hh24:mi:ss
+			body.setCustId(EopConfig.pre_keyword);//号码预占关键字,随机数，需以“99999”开头，最长16位数字
+			body.setUid(orderNumber);// 手淘uid
+			reqObj.setHead(head);
+			reqObj.setBody(body);
+			req.setReqObj(reqObj);
+			//// 加密前
+			String beforeEnc = JSON.toJSONString(reqObj);
+			// 加密后
+			String afterEnc = SecurityTool.encrypt(EopConfig.AES, beforeEnc);
+			baseReq.put("reqObj", afterEnc);
+			okhttp3.MediaType json = okhttp3.MediaType.parse("application/json; charset=utf-8");
+			OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
+			okhttp3.RequestBody requestBody = okhttp3.RequestBody.create(json, JSON.toJSONString(baseReq));
+			String jsonResult="";
+			for (int i = 0; i < 6; i++) {
+				String url=EopConfig.zop_url + "/king/card/order/ordersync";
+				log.info("调用联通同步订单接口={},参数加密前={},加密后参数={},传入参数={}",url,beforeEnc,afterEnc,JSON.toJSONString(baseReq));
+				Request requestResult = new Request.Builder().url(url)
+						.post(requestBody).build();
+
+				Response response = client.newCall(requestResult).execute();
+				log.info("调用联通同步订单接口返回参数={}",JSON.toJSON(response));
+				if (response.isSuccessful()) {
+					jsonResult = response.body().string();
+				} else {
+					jsonResult = response.message();
+				}
+
+				ZopBaseResponse zopBaseResponse = JSONObject.parseObject(jsonResult, ZopBaseResponse.class);
+				LogWrite.Write("加密前:" + beforeEnc + "加密后:" + afterEnc, result,eopaction);
+				result.setRespCode(zopBaseResponse.getRspCode());
+				result.setRespDesc(zopBaseResponse.getRspDesc());
+				if(StringUtils.isNotEmptyString(zopBaseResponse.getBody()))
+				{
+					log.info("调用联通同步订单接口返回参数={}",zopBaseResponse.getBody());
+					//获取订单号
+					Long orderNo=JSONObject.parseObject(zopBaseResponse.getBody(), UnicomOrderResponse.class).getOrderNo();
+					result.setOrderNo(orderNo);
+				}
+
+				if (zopBaseResponse.getRspCode().equals("0005") || zopBaseResponse.getRspCode().equals("9999")
+						|| zopBaseResponse.getRspCode().equals("L001") || zopBaseResponse.getRspCode().equals("L002")) {
+					System.out.println("重试");
+					Thread.sleep(500);
+				} else {
+					break;
+				}
+
+			}
+			// 设置如果返回8888给前端返回0000
+			if (result.getRespCode() == "8888") {
+				result.setRespCode("0000");
+			}
+		} catch (Exception ex) {
+			result.setRespCode("9999");
+			result.setRespDesc("同步订单异常");
+			LogWrite.Write(JSON.toJSONString(eopReq), ex.getStackTrace() + ex.getMessage(), eopaction);
+		}
+
+		return result;
 	}
 
 }

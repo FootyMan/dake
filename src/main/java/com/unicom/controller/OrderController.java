@@ -99,7 +99,7 @@ public class OrderController {
 					Date date = new Date();
 					int State = 0;// 订单状态:0-正常订单 1-取消订单
 					// 先入库
-					int id = ordersServiceImpl.InsertOrder(request, orderNumber, State, date);
+					int id = ordersServiceImpl.InsertOrder(request, orderNumber, State, date,req);
 					// 在请求联通下单接口
 					result = OrderBusiness.OrderSyncSend(request, date, State, orderNumber);
 					// 0000-传送成功;
@@ -295,5 +295,71 @@ public class OrderController {
 		}
 		return result;
 	}
+	@ResponseBody
+	@RequestMapping(value = "/v2/ordersyncexec", method = RequestMethod.POST)
+	public BaseResponse<?> OrderSyncexecByZop(HttpServletRequest req, HttpServletResponse res) throws Exception {
 
+		UnicomOrderResponse result = new UnicomOrderResponse();
+		BaseResponse<Object> response = new BaseResponse<Object>();
+
+		if (OrderBusiness.isRefererOk(req)) {
+			// 参数解密
+			OrderRequest request = OrderBusiness.ParameterDecrypt(req);
+			// 检查身份证号码是否下单超过五次
+			//int cert_noCount = ordersServiceImpl.selectOrderCount(request.getCertNo());
+			//System.out.println(cert_noCount);
+			NumberCheckResponse ck=OrderBusiness.Numbercheck(request);
+			if (!ck.getResultCode().equals("0000")) {
+
+				response.setCode("6998");
+				response.setMsg(ck.getResultDesc());
+				return response;
+			}
+			// 验证身份是否合法
+			boolean isSuccess = OrderBusiness.VerificationIdentity(request);
+			if (isSuccess) {
+				// 选占号码是否成功
+				ZopBaseResponse changeRes = OrderBusiness.NumStateChange(request);
+				if (changeRes.getRspCode().equals("0000")) {
+					String orderNumber = "dake" + StringUtils.GetUnicomOrderNumber();
+					Date date = new Date();
+					int State = 0;// 订单状态:0-正常订单 1-取消订单
+					// 先入库
+					int id = ordersServiceImpl.InsertOrder(request, orderNumber, State, date,req);
+					// 在请求联通下单接口
+					result = OrderBusiness.OrderSyncSendByZop(request, date, State, orderNumber);
+					// 0000-传送成功;
+					if (result.getRespCode().equals("0000") || result.getRespCode().equals("8888")) {
+
+						// 更新联通订单号
+						LiantongOrders successOrders = new LiantongOrders();
+						successOrders.setId(id);
+						successOrders.setStatus(1);
+						successOrders.setLiantong_orderno(result.getOrderNo());
+						ordersServiceImpl.UpdateLiantongOrderNumber(successOrders);
+					} else {
+						LiantongOrders errorOrders = new LiantongOrders();
+						errorOrders.setId(id);
+						errorOrders.setRemarks(result.getRespCode()+result.getRespDesc());
+						ordersServiceImpl.UpdateLiantongOrderNumber(errorOrders);
+					}
+					// 设置返回下单成功或者失败状态和描述
+					response.setCode(result.getRespCode());
+					response.setMsg(result.getRespDesc());
+				} else {
+					// 选占号码失败
+					response.setCode(changeRes.getRspCode());
+					response.setMsg(changeRes.getRspDesc());
+				}
+
+			} else {
+				response.setCode("6999");
+				response.setMsg("身份验证不合格");
+			}
+		} else {
+			response.setCode("401");
+			response.setMsg("非法请求");
+		}
+		return response;
+	}
 }
