@@ -555,7 +555,7 @@ public class OrderBusiness {
 				result.setRespDesc(zopBaseResponse.getRspDesc());
 				if(StringUtils.isNotEmptyString(zopBaseResponse.getBody()))
 				{
-					log.info("调用联通同步订单接口返回参数={}",zopBaseResponse.getBody());
+					log.info("调用联通同步订单接口返回body参数={}",zopBaseResponse.getBody());
 					//获取订单号
 					Long orderNo=JSONObject.parseObject(zopBaseResponse.getBody(), UnicomOrderResponse.class).getOrderNo();
 					result.setOrderNo(orderNo);
